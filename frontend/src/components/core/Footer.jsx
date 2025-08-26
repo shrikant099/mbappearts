@@ -9,7 +9,9 @@ import {
   FaEnvelope,
   FaMapMarkerAlt,
   FaArrowUp,
-  FaHeart
+  FaHeart,
+  FaCouch,
+  FaHome
 } from "react-icons/fa";
 import logo from "../../assets/images/LOGO.jpg"
 import { FaSquareInstagram } from "react-icons/fa6";
@@ -68,16 +70,24 @@ export default function Footer() {
   const companyLinks = [
     { name: 'About Us', href: '/about' },
     { name: 'Our Services', href: '/services' },
-    { name: 'Plans & Offers', href: '/offers' },
-    { name: 'Career', href: '/career' }
+    { name: 'Custom Furniture', href: '/custom' },
+    { name: 'Interior Design', href: '/interior-design' }
   ];
 
   const helpLinks = [
     { name: 'FAQ', href: '/faq' },
     { name: 'Support Center', href: '/support' },
-    { name: 'Shipping Info', href: '/shipping' },
-    { name: 'Returns', href: '/returns' },
-    { name: 'Size Guide', href: '/size-guide' }
+    { name: 'Delivery Info', href: '/delivery' },
+    { name: 'Returns & Exchange', href: '/returns' },
+    { name: 'Care Guide', href: '/care-guide' }
+  ];
+
+  const categoryLinks = [
+    { name: 'Living Room', href: '/living-room' },
+    { name: 'Bedroom', href: '/bedroom' },
+    { name: 'Dining Room', href: '/dining-room' },
+    { name: 'Office Furniture', href: '/office' },
+    { name: 'Storage Solutions', href: '/storage' }
   ];
 
   return (
@@ -96,25 +106,25 @@ export default function Footer() {
         <Container>
           <div className="py-16 px-4 md:px-8">
             {/* Main Footer Content */}
-            <div className="grid lg:grid-cols-4 md:grid-cols-2 grid-cols-1 gap-8 lg:gap-12">
+            <div className="grid lg:grid-cols-5 md:grid-cols-2 grid-cols-1 gap-8 lg:gap-12">
               
               {/* Company Info Section */}
-              <div className="space-y-6 group">
+              <div className="lg:col-span-2 space-y-6 group">
                 <div className="transform transition-all duration-500 group-hover:scale-105">
                   <img 
                     width={200} 
                     src={logo}
-                    alt="UKF Outlets Logo" 
-                    className="filter  invert rounded-4xl brightness-100 hover:invert-0 transition-all duration-500 transform hover:scale-110"
+                    alt="Mbappe Arts Logo" 
+                    className="filter invert rounded-full brightness-100 hover:invert-0 transition-all duration-500 transform hover:scale-110"
                   />
                 </div>
                 
                 <p className="text-gray-300 leading-relaxed text-sm md:text-base transform transition-all duration-300 hover:text-[#FFD700]">
-                  We're fashion visionaries who bring your ideas to life through
-                  stunning digital experiences. We understand your brand, your vibe,
-                  and your audience—then design every detail to reflect your style.
-                  From concept to creation, we use thoughtful design and smart tech
-                  to elevate your fashion business.
+                  We are furniture artisans who bring your vision to life through
+                  exquisite craftsmanship and timeless design. We understand your space, your style,
+                  and your needs—then create every piece to reflect your personality.
+                  From concept to delivery, we use premium materials and expert techniques
+                  to transform your house into a home.
                 </p>
                 
                 {/* Social Media Icons */}
@@ -167,6 +177,29 @@ export default function Footer() {
                 </nav>
               </div>
 
+              {/* Furniture Categories */}
+              <div className="space-y-6">
+                <h3 className="font-bold text-2xl text-[#FFD700] relative group flex items-center gap-2">
+                  <FaCouch className="text-lg" />
+                  Categories
+                  <div className="absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-[#FFD700] to-yellow-400 group-hover:w-full transition-all duration-500"></div>
+                </h3>
+                <nav className="space-y-3">
+                  {categoryLinks.map((link, index) => (
+                    <a
+                      key={index}
+                      href={link.href}
+                      className="block text-gray-300 hover:text-[#FFD700] transition-all duration-300 transform hover:translate-x-2 hover:scale-105 py-1 px-2 rounded-lg hover:bg-[#FFD700]/5 group"
+                    >
+                      <span className="relative">
+                        {link.name}
+                        <span className="absolute -right-4 opacity-0 group-hover:opacity-100 transition-all duration-300">→</span>
+                      </span>
+                    </a>
+                  ))}
+                </nav>
+              </div>
+
               {/* Help Section */}
               <div className="space-y-6">
                 <h3 className="font-bold text-2xl text-[#FFD700] relative group">
@@ -188,59 +221,72 @@ export default function Footer() {
                   ))}
                 </nav>
               </div>
+            </div>
 
-              {/* Contact & Map Section */}
-              <div className="space-y-6">
-                <h3 className="font-bold text-2xl text-[#FFD700] relative group">
-                  Contact Us
-                  <div className="absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-[#FFD700] to-yellow-400 group-hover:w-full transition-all duration-500"></div>
-                </h3>
-                
-                {/* Interactive Map */}
-                <div className="relative group overflow-hidden rounded-2xl border-2 border-[#FFD700]/30 shadow-2xl">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
-                  <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3535.4715492878927!2d75.13443237491958!3d27.609908729783214!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396ca568c789ee5d%3A0xe1f049c124c8208d!2sUKF%20Outlet!5e0!3m2!1sen!2sin!4v1752668000518!5m2!1sen!2sin"
-                    style={{ border: 0 }}
-                    allowFullScreen=""
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    className="w-full h-48 transition-all duration-500 group-hover:scale-105 filter group-hover:brightness-110"
-                  />
-                  <div className="absolute bottom-4 left-4 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                    <div className="bg-black/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-[#FFD700]/30">
-                      <p className="text-[#FFD700] text-sm font-semibold">📍 Visit Our Store</p>
+            {/* Contact & Map Section */}
+            <div className="mt-12 pt-8 border-t border-[#FFD700]/20">
+              <div className="grid lg:grid-cols-2 gap-8 items-center">
+                <div className="space-y-6">
+                  <h3 className="font-bold text-2xl text-[#FFD700] relative group flex items-center gap-2">
+                    <FaHome className="text-lg" />
+                    Visit Our Showroom
+                    <div className="absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-[#FFD700] to-yellow-400 group-hover:w-full transition-all duration-500"></div>
+                  </h3>
+                  
+                  {/* Contact Information */}
+                  <div className="space-y-4">
+                    <a
+                      href="tel:+919694520525"
+                      className="flex items-center gap-4 text-gray-300 hover:text-[#FFD700] transition-all duration-300 transform hover:translate-x-2 p-3 rounded-xl hover:bg-[#FFD700]/5 group"
+                    >
+                      <div className="p-2 bg-gradient-to-br from-[#FFD700]/20 to-yellow-400/20 rounded-lg group-hover:scale-110 transition-all duration-300">
+                        <FaPhone className="text-[#FFD700] group-hover:animate-pulse" />
+                      </div>
+                      <span className="font-medium">+91 96945 20525</span>
+                    </a>
+                    
+                    <a
+                      href="mailto:mbapearts@gmail.com"
+                      className="flex items-center gap-4 text-gray-300 hover:text-[#FFD700] transition-all duration-300 transform hover:translate-x-2 p-3 rounded-xl hover:bg-[#FFD700]/5 group"
+                    >
+                      <div className="p-2 bg-gradient-to-br from-[#FFD700]/20 to-yellow-400/20 rounded-lg group-hover:scale-110 transition-all duration-300">
+                        <FaEnvelope className="text-[#FFD700] group-hover:animate-pulse" />
+                      </div>
+                      <span className="font-medium">mbapearts@gmail.com</span>
+                    </a>
+                    
+                    <div className="flex items-start gap-4 text-gray-300 p-3 rounded-xl group">
+                      <div className="p-2 bg-gradient-to-br from-[#FFD700]/20 to-yellow-400/20 rounded-lg mt-1">
+                        <FaMapMarkerAlt className="text-[#FFD700]" />
+                      </div>
+                      <div className="font-medium">
+                        <p className="text-[#FFD700] font-semibold mb-1">Mbappe Arts</p>
+                        <p>Ground Floor, Plot No 75</p>
+                        <p>Post Udsar Lodera Teh Sardarshahar</p>
+                        <p>Vikash Nagar Village Bholusar</p>
+                        <p>Bholoosar, Churu District</p>
+                        <p>Rajasthan 331403</p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Contact Information */}
-                <div className="space-y-4">
-                  <a
-                    href="tel:+918741930153"
-                    className="flex items-center gap-4 text-gray-300 hover:text-[#FFD700] transition-all duration-300 transform hover:translate-x-2 p-3 rounded-xl hover:bg-[#FFD700]/5 group"
-                  >
-                    <div className="p-2 bg-gradient-to-br from-[#FFD700]/20 to-yellow-400/20 rounded-lg group-hover:scale-110 transition-all duration-300">
-                      <FaPhone className="text-[#FFD700] group-hover:animate-pulse" />
+                {/* Interactive Map */}
+                <div className="relative group overflow-hidden rounded-2xl border-2 border-[#FFD700]/30 shadow-2xl">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+                  <iframe
+  src="https://www.google.com/maps?q=Ground+Floor,+Plot+No+75,+Post+Udsar+Lodera+Teh+Sardarshahar,+Vikash+Nagar+Village+Bholusar,+Bholoosar,+Churu+District,+Rajasthan+331403&output=embed"
+  style={{ border: 0 }}
+  allowFullScreen=""
+  loading="lazy"
+  referrerPolicy="no-referrer-when-downgrade"
+  className="w-full h-64 transition-all duration-500 rounded-2xl shadow-xl"
+  title="Mbappe Arts Location"
+/>
+                  <div className="absolute bottom-4 left-4 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <div className="bg-black/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-[#FFD700]/30">
+                      <p className="text-[#FFD700] text-sm font-semibold">🏠 Visit Our Showroom</p>
                     </div>
-                    <span className="font-medium">+91 87419 30153</span>
-                  </a>
-                  
-                  <a
-                    href="mailto:info@ukf-outlets.in"
-                    className="flex items-center gap-4 text-gray-300 hover:text-[#FFD700] transition-all duration-300 transform hover:translate-x-2 p-3 rounded-xl hover:bg-[#FFD700]/5 group"
-                  >
-                    <div className="p-2 bg-gradient-to-br from-[#FFD700]/20 to-yellow-400/20 rounded-lg group-hover:scale-110 transition-all duration-300">
-                      <FaEnvelope className="text-[#FFD700] group-hover:animate-pulse" />
-                    </div>
-                    <span className="font-medium">info@ukf-outlets.in</span>
-                  </a>
-                  
-                  <div className="flex items-center gap-4 text-gray-300 p-3 rounded-xl group">
-                    <div className="p-2 bg-gradient-to-br from-[#FFD700]/20 to-yellow-400/20 rounded-lg">
-                      <FaMapMarkerAlt className="text-[#FFD700]" />
-                    </div>
-                    <span className="font-medium">J45P+XQX, In side, chandpol, gate, Subhash Chowk, Sikar, Rajasthan 332001</span>
                   </div>
                 </div>
               </div>
@@ -249,8 +295,10 @@ export default function Footer() {
             {/* Newsletter Section */}
             <div className="mt-16 pt-12 border-t border-[#FFD700]/20">
               <div className="max-w-2xl mx-auto text-center space-y-6">
-                <h3 className="text-3xl font-bold text-[#FFD700] animate-pulse">
-                  Stay Updated with Latest Fashion Trends
+                <h3 className="text-3xl font-bold text-[#FFD700] animate-pulse flex items-center justify-center gap-3">
+                  <FaCouch className="text-2xl" />
+                  Stay Updated with Latest Furniture Collections
+                  <FaHome className="text-2xl" />
                 </h3>
               </div>
             </div>
@@ -259,13 +307,13 @@ export default function Footer() {
             <div className="mt-16 pt-8 border-t border-[#FFD700]/20">
               <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div className="flex items-center gap-2 text-gray-300">
-                  <span>Made with</span>
+                  <span>Crafted with</span>
                   <FaHeart className="text-red-500 animate-pulse" />
-                  <span>by <span>TechBro24</span></span>
+                  <span>by <span className="text-[#FFD700]">TechBro24</span></span>
                 </div>
                 
                 <div className="text-center text-gray-300">
-                  <p>&copy; 2025 UKF Outlets. All rights reserved.</p>
+                  <p>&copy; 2025 Mbappe Arts. All rights reserved.</p>
                 </div>
                 
                 <div className="flex gap-6 text-sm">

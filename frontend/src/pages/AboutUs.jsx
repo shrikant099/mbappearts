@@ -4,10 +4,10 @@ import { Star, ShoppingBag, Store, Heart, Users, Sparkles, Handshake, Globe } fr
 import heroimage from "../assets/images/abouthero.jpeg";
 import happycustomer from "../assets/images/happycustomer.jpg";
 import image1 from "../assets/images/image1about.webp";
-import fashionableimage from "../assets/images/fashionableimage.jpeg";
+import craftedimage from "../assets/images/craftedimage.jpeg";
 import ourproducts from "../assets/images/ourproducts.jpg";
 import ourstores from "../assets/images/ourstores.png";
-import ourfashion from "../assets/images/ourfashion.webp";
+import ourfurniture from "../assets/images/ourfurniture.webp";
 
 // Animation variants for a consistent fade-in-up effect
 const fadeInUp = {
@@ -35,33 +35,33 @@ const staggerContainer = {
 const AboutUs = () => {
   const exploreItems = [
     { image: ourproducts, title: "Our Products" },
-    { image: ourstores, title: "Our Stores" },
-    { image: ourfashion, title: "Our Fashion" }
+    { image: ourstores, title: "Our Showrooms" },
+    { image: ourfurniture, title: "Our Furniture" }
   ];
 
   const valueItems = [
     {
       icon: Heart,
-      title: "Quality First",
-      description: "Premium materials and expert craftsmanship in every piece, ensuring lasting style and comfort."
+      title: "Quality Craftsmanship",
+      description: "Premium materials and expert craftsmanship in every piece, ensuring lasting beauty and durability for your home."
     },
     {
       icon: Handshake,
-      title: "Ethical Sourcing",
-      description: "We partner with ethical factories and use sustainable practices to protect both people and the planet."
+      title: "Sustainable Sourcing",
+      description: "We partner with responsible suppliers and use eco-friendly practices to protect both people and the environment."
     },
     {
       icon: Globe,
-      title: "Radical Transparency",
-      description: "We believe in being open and honest about our processes, from sourcing to production."
+      title: "Customer-Centric Service",
+      description: "We believe in transparent pricing, honest communication, and exceptional service from consultation to delivery."
     }
   ];
 
   const statsItems = [
-    { icon: Users, number: "50K+", label: "Happy Customers" },
-    { icon: ShoppingBag, number: "10K+", label: "Products Sold" },
-    { icon: Store, number: "25+", label: "Retail Stores" },
-    { icon: Star, number: "4.9", label: "Average Rating" }
+    { icon: Users, number: "5K+", label: "Happy Customers" },
+    { icon: ShoppingBag, number: "2K+", label: "Furniture Pieces" },
+    { icon: Store, number: "1", label: "Showroom" },
+    { icon: Star, number: "4.8", label: "Customer Rating" }
   ];
 
   return (
@@ -100,10 +100,10 @@ const AboutUs = () => {
           className="relative z-10 px-4 max-w-4xl"
         >
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight bg-gradient-to-r from-[#FFD770] to-yellow-500 bg-clip-text text-transparent">
-            We Believe in Making a Difference
+            Crafting Dreams into Reality
           </h1>
           <p className="text-base md:text-xl lg:text-2xl font-light text-gray-300">
-            Exceptional Quality. Ethical Factories. Radical Transparency.
+            Premium Furniture. Expert Craftsmanship. Exceptional Service.
           </p>
         </motion.div>
       </div>
@@ -127,8 +127,8 @@ const AboutUs = () => {
               variants={fadeInUp}
               className="flex flex-col items-center p-6 rounded-2xl bg-gray-900/50 border border-[#FFD770]/20 hover:border-[#FFD770]/60 transition-all duration-500"
             >
-              <stat.icon className="w-10 h-10 text-[#FFD770] mb-4" />
-              <span className="text-3xl md:text-5xl font-bold text-[#FFD770]">{stat.number}</span>
+              <stat.icon className="w-10 h-10 text-[#FFD700] mb-4" />
+              <span className="text-3xl md:text-5xl font-bold text-[#FFD700]">{stat.number}</span>
               <span className="text-sm md:text-base text-gray-400 font-medium">{stat.label}</span>
             </motion.div>
           ))}
@@ -148,12 +148,12 @@ const AboutUs = () => {
           viewport={{ once: true }}
           variants={fadeInUp}
         >
-          <Sparkles className="w-12 h-12 text-[#FFD770] mx-auto mb-6" />
+          <Sparkles className="w-12 h-12 text-[#FFD700] mx-auto mb-6" />
           <h2 className="text-3xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-[#FFD770] to-yellow-500 bg-clip-text text-transparent">
             Our Mission
           </h2>
           <p className="text-lg md:text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto">
-            UKF Outfits is a fashion-forward destination offering timeless style with a modern flair. We curate premium clothing that blends quality, elegance, and individuality, empowering you to express yourself with confidence.
+            Mbappe Arts is a premier furniture destination offering timeless designs with contemporary flair. We curate exceptional furniture pieces that blend quality, elegance, and functionality, transforming houses into homes and spaces into sanctuaries.
           </p>
         </motion.div>
       </div>
@@ -191,8 +191,8 @@ const AboutUs = () => {
                 variants={fadeInUp}
                 className="group p-8 rounded-2xl bg-gray-900/50 border border-[#FFD770]/20 hover:border-[#FFD770]/60 transition-all duration-500 hover:-translate-y-2 hover:shadow-xl"
               >
-                <value.icon className="w-12 h-12 text-[#FFD770] mb-6 group-hover:scale-110 transition-transform duration-300" />
-                <h3 className="text-xl font-bold mb-4 text-[#FFD770]">{value.title}</h3>
+                <value.icon className="w-12 h-12 text-[#FFD700] mb-6 group-hover:scale-110 transition-transform duration-300" />
+                <h3 className="text-xl font-bold mb-4 text-[#FFD700]">{value.title}</h3>
                 <p className="text-gray-400">{value.description}</p>
               </motion.div>
             ))}
@@ -217,15 +217,15 @@ const AboutUs = () => {
             <img
               src={happycustomer}
               className="w-full h-auto rounded-3xl object-cover shadow-2xl transition-transform duration-500 hover:scale-105"
-              alt="Happy customer wearing our clothing"
+              alt="Happy customer with our furniture"
             />
           </motion.div>
           <motion.div variants={fadeInUp} className="text-center lg:text-left">
             <h2 className="text-3xl md:text-4xl font-bold mb-5 bg-gradient-to-r from-[#FFD770] to-yellow-500 bg-clip-text text-transparent">
-              Our Ethical Approach
+              Our Commitment to Excellence
             </h2>
             <p className="text-lg text-gray-300 leading-relaxed max-w-xl lg:max-w-none mx-auto lg:mx-0">
-              At UKF Outfits, our ethical approach is woven into every thread of our brand. We prioritize sustainable sourcing, fair labor practices, and mindful production that respects both people and the planet. By embracing transparency and responsibility, we ensure that fashion is not only beautiful but also conscientious. Because style should never come at the cost of integrity.
+              At Mbappe Arts, our commitment to excellence is woven into every piece we create. We prioritize sustainable materials, ethical manufacturing practices, and responsible sourcing that respects both artisans and the environment. By embracing transparency and quality craftsmanship, we ensure that furniture is not only beautiful but also built to last. Because your home deserves furniture that reflects your values and stands the test of time.
             </p>
           </motion.div>
         </motion.div>
@@ -245,12 +245,12 @@ const AboutUs = () => {
 
         <img
           src={image1}
-          alt="Fashionable model"
+          alt="Beautiful furniture display"
           className="w-full h-auto object-cover"
         />
       </motion.div>
 
-      {/* Fashionable Clothing Section */}
+      {/* Quality Furniture Section */}
       <div className="py-20 bg-gray-900 relative">
         {/* Section specific dots/blobs */}
         <div className="absolute top-0 left-0 w-40 h-40 bg-[#FFD770]/5 rounded-full blur-3xl animate-blob-slow mix-blend-screen" />
@@ -265,17 +265,17 @@ const AboutUs = () => {
         >
           <motion.div variants={fadeInUp} className="text-center lg:text-left order-2 lg:order-1">
             <h2 className="text-3xl md:text-4xl font-bold mb-5 bg-gradient-to-r from-[#FFD770] to-yellow-500 bg-clip-text text-transparent">
-              Fashionable Clothing
+              Masterfully Crafted Furniture
             </h2>
             <p className="text-lg text-gray-300 leading-relaxed max-w-xl lg:max-w-none mx-auto lg:mx-0">
-              Fashionable clothing at UKF Outfits is an embodiment of sophistication, individuality, and modern elegance. Every piece is thoughtfully curated to celebrate self-expression, blending timeless silhouettes with trend-savvy design. We believe fashion should be empowering, not just stylish, which is why UKF brings garments that complement your personality and elevate your lifestyle. It's not just fashion, it's your signature look, delivered.
+              Quality furniture at Mbappe Arts is an embodiment of sophistication, durability, and timeless design. Every piece is thoughtfully crafted to celebrate functionality and aesthetics, blending traditional techniques with contemporary innovation. We believe furniture should be enduring, not just stylish, which is why Mbappe Arts brings pieces that complement your lifestyle and enhance your living spaces. It's not just furniture, it's your home's signature statement, beautifully delivered.
             </p>
           </motion.div>
           <motion.div variants={fadeInUp} className="order-1 lg:order-2">
             <img
-              src={fashionableimage}
+              src={craftedimage}
               className="w-full h-auto rounded-3xl object-cover shadow-2xl transition-transform duration-500 hover:scale-105"
-              alt="Fashionable clothing"
+              alt="Masterfully crafted furniture"
             />
           </motion.div>
         </motion.div>
@@ -318,7 +318,7 @@ const AboutUs = () => {
                     alt={item.title}
                   />
                 </div>
-                <div className="mt-6 text-xl font-semibold text-gray-200 transition-colors duration-300 group-hover:text-[#FFD770]">
+                <div className="mt-6 text-xl font-semibold text-gray-200 transition-colors duration-300 group-hover:text-[#FFD700]">
                   {item.title}
                 </div>
               </motion.div>

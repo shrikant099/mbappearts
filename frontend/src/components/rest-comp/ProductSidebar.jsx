@@ -11,21 +11,21 @@ const { getAllCategory } = categoryEndpoints;
 
 const ProductSidebar = () => {
   const filters = useSelector((state) => state.filters);
-  const isOpen = useSelector(state => state.product.isOpen);
+  const isOpen = useSelector((state) => state.product.isOpen);
 
   const [categories, setCategories] = useState([]);
   const [priceRange, setPriceRange] = useState({
     min: 0,
-    max: 10000
+    max: 100000
   });
   
   // Add ref to track if we're updating from Redux
   const isUpdatingFromRedux = useRef(false);
   
-  // Constants for price range slider
+  // Constants for price range slider - Updated for furniture pricing
   const MIN_PRICE = 0;
-  const MAX_PRICE = 10000;
-  const STEP = 100;
+  const MAX_PRICE = 100000;
+  const STEP = 1000;
 
   const dispatch = useDispatch();
 
@@ -97,7 +97,9 @@ const ProductSidebar = () => {
   };
 
   const formatPrice = (price) => {
-    if (price >= 1000) {
+    if (price >= 100000) {
+      return `₹${(price / 100000).toFixed(1)}L`;
+    } else if (price >= 1000) {
       return `₹${(price / 1000).toFixed(0)}k`;
     }
     return `₹${price}`;
@@ -193,7 +195,7 @@ const ProductSidebar = () => {
                 onChange={(e) => handlePriceRangeChange('min', e.target.value)}
                 className="absolute top-[-9px] left-0 w-full h-6 appearance-none bg-transparent cursor-grab active:cursor-grabbing slider-thumb"
                 style={{ 
-                  zIndex: priceRange.min > MAX_PRICE - 1000 ? 2 : 1,
+                  zIndex: priceRange.min > MAX_PRICE - 10000 ? 2 : 1,
                   pointerEvents: 'all'
                 }}
               />
@@ -208,7 +210,7 @@ const ProductSidebar = () => {
                 onChange={(e) => handlePriceRangeChange('max', e.target.value)}
                 className="absolute top-[-9px] left-0 w-full h-6 appearance-none bg-transparent cursor-grab active:cursor-grabbing slider-thumb"
                 style={{ 
-                  zIndex: priceRange.max < 1000 ? 2 : 1,
+                  zIndex: priceRange.max < 10000 ? 2 : 1,
                   pointerEvents: 'all'
                 }}
               />
@@ -243,29 +245,29 @@ const ProductSidebar = () => {
             </div>
           </div>
 
-          {/* Gender */}
+          {/* Room Type - Replacing Gender */}
           <div>
-            <h2 className="text-xl font-semibold mb-2">Gender</h2>
-            {["Men", "Women", "Unisex", "Kids", "Boys", "Girls"].map((gender) => (
-              <label key={gender} className="flex items-center mb-1">
+            <h2 className="text-xl font-semibold mb-2">Room Type</h2>
+            {["Living Room", "Bedroom", "Dining Room", "Office", "Kitchen", "Outdoor"].map((room) => (
+              <label key={room} className="flex items-center mb-1">
                 <input
                   type="checkbox"
-                  value={gender}
-                  checked={filters.gender?.includes(gender) || false}
+                  value={room}
+                  checked={filters.roomType?.includes(room) || false}
                   onChange={(e) =>
-                    handleCheckboxChange("gender", gender, e.target.checked)
+                    handleCheckboxChange("roomType", room, e.target.checked)
                   }
                   className="mr-2"
                 />
-                {gender}
+                {room}
               </label>
             ))}
           </div>
 
-          {/* Material */}
+          {/* Material - Updated for furniture materials */}
           <div>
             <h2 className="text-xl font-semibold mb-2">Material</h2>
-            {["Cotton", "Nylon", "Wool", "Polyester", "Terrycotta", "Leather"].map(
+            {["Wood", "Metal", "Glass", "Plastic", "Fabric", "Leather", "Marble", "Rattan"].map(
               (material) => (
                 <label key={material} className="flex items-center mb-1">
                   <input
@@ -283,22 +285,43 @@ const ProductSidebar = () => {
             )}
           </div>
 
-          {/* Season */}
+          {/* Style - Replacing Season */}
           <div>
-            <h2 className="text-xl font-semibold mb-2">Season</h2>
-            {["Summer", "Winter", "Spring", "Fall", "All Season"].map(
-              (season) => (
-                <label key={season} className="flex items-center mb-1">
+            <h2 className="text-xl font-semibold mb-2">Style</h2>
+            {["Modern", "Contemporary", "Traditional", "Industrial", "Rustic", "Minimalist"].map(
+              (style) => (
+                <label key={style} className="flex items-center mb-1">
                   <input
                     type="checkbox"
-                    value={season}
-                    checked={filters.season?.includes(season) || false}
+                    value={style}
+                    checked={filters.style?.includes(style) || false}
                     onChange={(e) =>
-                      handleCheckboxChange("season", season, e.target.checked)
+                      handleCheckboxChange("style", style, e.target.checked)
                     }
                     className="mr-2"
                   />
-                  {season}
+                  {style}
+                </label>
+              )
+            )}
+          </div>
+
+          {/* Color */}
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Color</h2>
+            {["Brown", "Black", "White", "Natural Wood", "Gray", "Blue", "Red", "Green"].map(
+              (color) => (
+                <label key={color} className="flex items-center mb-1">
+                  <input
+                    type="checkbox"
+                    value={color}
+                    checked={filters.color?.includes(color) || false}
+                    onChange={(e) =>
+                      handleCheckboxChange("color", color, e.target.checked)
+                    }
+                    className="mr-2"
+                  />
+                  {color}
                 </label>
               )
             )}

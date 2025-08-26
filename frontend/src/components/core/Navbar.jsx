@@ -7,10 +7,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { setRole, setUserData, setToken } from "../../slices/authSlice";
 import toast from "react-hot-toast";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import womensfashion from "../../assets/images/womens fashion.webp";
-import mensfashion from "../../assets/images/mensfashion.webp";
-import perfumes from "../../assets/images/perfumes.webp";
-import accessories from "../../assets/images/accessories.jpg";
+import livingroomFurniture from "../../assets/images/livingroom.webp";
+import bedroomFurniture from "../../assets/images/bedroom.webp";
+import diningroomFurniture from "../../assets/images/diningroom.webp";
+import officeFurniture from "../../assets/images/office.jpg";
 import { setSearchData } from "../../slices/searchSlice";
 import { clearFilters, updateFilter } from "../../slices/filterSlice";
 import CartSidebar from "../rest-comp/CartSidebar";
@@ -53,8 +53,8 @@ const Navbar = () => {
         productId: item._id,
         quantity: item.quantity,
         price: item.price,
-        size:item.size,
-        color:item.color,
+        size: item.size,
+        color: item.color,
       }));
 
       const response = await apiConnector(
@@ -125,11 +125,13 @@ const Navbar = () => {
         >
           ☰
         </button>
+        
+        {/* Simple Rounded Logo */}
         <img
           src={logo}
-          className="w-[10vh] ml-10 cursor-pointer lg:ml-0"
+          className=" h-[7vh] ml-10 cursor-pointer lg:ml-0 rounded-lg object-cover"
           onClick={() => navigate("/")}
-          alt="UKF-Outlets"
+          alt="Mbappe Arts"
         />
 
         <div className="hidden opacity-0 lg:opacity-100 lg:flex z-[91]">
@@ -143,103 +145,102 @@ const Navbar = () => {
 
                   dispatch(setSearchData(''));
 
-                  // Then apply the new gender filter
-                  dispatch(
-                    updateFilter({
-                      type: "gender",
-                      value: "Men",
-                      checked: true,
-                    })
-                  );
-                }}
-                className="h-[9vh] flex items-center justify-center w-[4vw] cursor-pointer"
-              >
-                {/* You can add inner text or icon here */}
-                Men
-              </NavLink>
-
-              <div className="opacity-0 group-hover:opacity-100 w-[4vw] h-[1px] bg-[#FFD700]"></div>
-            </li>
-            <li className="group flex flex-col justify-between">
-              <NavLink
-                to="/products"
-                 onClick={() => {
-                  // Clear all filters first
-                  dispatch(clearFilters());
-
-                  dispatch(setSearchData(''));
-
-                  // Then apply the new gender filter
-                  dispatch(
-                    updateFilter({
-                      type: "gender",
-                      value: "Women",
-                      checked: true,
-                    })
-                  );
-                }}
-                className="h-[9vh] flex items-center justify-center w-[4vw] cursor-pointer"
-              >
-                Women
-              </NavLink>
-              <div className="opacity-0 group-hover:opacity-100 w-[4vw] h-[1px] bg-[#FFD700]"></div>
-            </li>
-
-            <li className="group flex flex-col justify-between relative">
-              <NavLink
-                to="/products"
-                 onClick={() => {
-                  // Clear all filters first
-                  dispatch(clearFilters());
-
-                  dispatch(setSearchData(''));
-
-                  // Then apply the new gender filter
+                  // Then apply the new category filter for living room
                   dispatch(
                     updateFilter({
                       type: "categories",
-                      value: "Perfume",
-                      checked: true,
-                    })
-                  );
-                }}
-                className="h-[9vh] flex items-center justify-center w-[4vw] cursor-pointer"
-              >
-                Perfume
-              </NavLink>
-              <div className="opacity-0 group-hover:opacity-100 w-[4vw] h-[1px] bg-[#FFD700]"></div>
-            </li>
-            <li className="group flex flex-col justify-between relative">
-              <NavLink
-                to="/products"
-                 onClick={() => {
-                  // Clear all filters first
-                  dispatch(clearFilters());
-
-                  dispatch(setSearchData(''));
-
-                  // Then apply the new gender filter
-                  dispatch(
-                    updateFilter({
-                      type: "categories",
-                      value: "Wallet",
-                      checked: true,
-                    })
-                  );
-
-                  dispatch(
-                    updateFilter({
-                      type: "categories",
-                      value: "Belt",
+                      value: "Living Room",
                       checked: true,
                     })
                   );
                 }}
                 className="h-[9vh] flex items-center justify-center w-[6vw] cursor-pointer"
               >
-                Accessories
+                Living Room
+              </NavLink>
+
+              <div className="opacity-0 group-hover:opacity-100 w-[6vw] h-[1px] bg-[#FFD700]"></div>
+            </li>
+            <li className="group flex flex-col justify-between">
+              <NavLink
+                to="/products"
+                onClick={() => {
+                  // Clear all filters first
+                  dispatch(clearFilters());
+
+                  dispatch(setSearchData(''));
+
+                  // Then apply the new category filter for bedroom
+                  dispatch(
+                    updateFilter({
+                      type: "categories",
+                      value: "Bedroom",
+                      checked: true,
+                    })
+                  );
+                }}
+                className="h-[9vh] flex items-center justify-center w-[4vw] cursor-pointer"
+              >
+                Bedroom
+              </NavLink>
+              <div className="opacity-0 group-hover:opacity-100 w-[4vw] h-[1px] bg-[#FFD700]"></div>
+            </li>
+
+            <li className="group flex flex-col justify-between relative">
+              <NavLink
+                to="/products"
+                onClick={() => {
+                  // Clear all filters first
+                  dispatch(clearFilters());
+
+                  dispatch(setSearchData(''));
+
+                  // Then apply the new category filter for dining room
+                  dispatch(
+                    updateFilter({
+                      type: "categories",
+                      value: "Dining Room",
+                      checked: true,
+                    })
+                  );
+                }}
+                className="h-[9vh] flex items-center justify-center w-[6vw] cursor-pointer"
+              >
+                Dining Room
               </NavLink>
               <div className="opacity-0 group-hover:opacity-100 w-[6vw] h-[1px] bg-[#FFD700]"></div>
+            </li>
+            <li className="group flex flex-col justify-between relative">
+              <NavLink
+                to="/products"
+                onClick={() => {
+                  // Clear all filters first
+                  dispatch(clearFilters());
+
+                  dispatch(setSearchData(''));
+
+                  // Then apply filters for office furniture
+                  dispatch(
+                    updateFilter({
+                      type: "categories",
+                      value: "Office",
+                      checked: true,
+                    })
+                  );
+
+                  dispatch(
+                    updateFilter({
+                      type: "categories",
+                      value: "Storage",
+                      checked: true,
+                    })
+                  );
+                }}
+                className="h-[9vh] flex items-center justify-center w-[4vw] cursor-pointer"
+              >
+                Office
+              </NavLink>
+              <div className="opacity-0 group-hover:opacity-100 w-[4vw] h-[1px] bg-[#FFD700]"></div>
             </li>
 
             <li className="group flex flex-col justify-between">
@@ -281,7 +282,7 @@ const Navbar = () => {
                     <div className="flex gap-0 ">
                       <input
                         type="text"
-                        placeholder="Search..."
+                        placeholder="Search furniture..."
                         onChange={(e) => setSearchBar(e.target.value)}
                         className="bg-black h-[8vh]  pl-4 text-[#ffd700] placeholder:text-[#FFD700] lg:w-[50vw] border-black rounded-l-2xl"
                       />
@@ -308,21 +309,21 @@ const Navbar = () => {
                             onClick={() =>
                               dispatch(
                                 updateFilter({
-                                  type: "gender",
-                                  value: "Women",
+                                  type: "categories",
+                                  value: "Living Room",
                                   checked: true,
                                 })
                               )
                             }
                           >
                             <img
-                              src={womensfashion}
+                              src={livingroomFurniture}
                               onClick={() => setShowSearch(false)}
-                              alt="image1"
+                              alt="Living Room Furniture"
                               className="rounded-2xl mb-2 shadow-2xl h-[25vh] lg:w-[23vh]"
                             />
                           </Link>
-                          <div className="text-xs">Women's Fashion</div>
+                          <div className="text-xs">Living Room</div>
                         </div>
                         <div className="w-[40vw] lg:w-[20vw] flex flex-col items-center ">
                           <Link
@@ -330,21 +331,21 @@ const Navbar = () => {
                             onClick={() =>
                               dispatch(
                                 updateFilter({
-                                  type: "gender",
-                                  value: "Men",
+                                  type: "categories",
+                                  value: "Bedroom",
                                   checked: true,
                                 })
                               )
                             }
                           >
                             <img
-                              src={mensfashion}
+                              src={bedroomFurniture}
                               onClick={() => setShowSearch(false)}
-                              alt="image2"
+                              alt="Bedroom Furniture"
                               className="rounded-2xl mb-2 shadow-2xl h-[25vh] lg:w-[23vh]"
                             />
                           </Link>
-                          <div className="text-xs">Men's Fashion</div>
+                          <div className="text-xs">Bedroom</div>
                         </div>
                       </div>
                       <div className="flex justify-around">
@@ -355,20 +356,20 @@ const Navbar = () => {
                               dispatch(
                                 updateFilter({
                                   type: "categories",
-                                  value: "Perfume",
+                                  value: "Dining Room",
                                   checked: true,
                                 })
                               )
                             }
                           >
                             <img
-                              src={perfumes}
-                              alt="image3"
+                              src={diningroomFurniture}
+                              alt="Dining Room Furniture"
                               onClick={() => setShowSearch(false)}
                               className="rounded-2xl mb-2 shadow-2xl h-[25vh]"
                             />
                           </Link>
-                          <div className="text-xs">Perfumes</div>
+                          <div className="text-xs">Dining Room</div>
                         </div>
                         <div className="w-[40vw] lg:w-[20vw] flex flex-col items-center ">
                           <Link
@@ -377,20 +378,20 @@ const Navbar = () => {
                               dispatch(
                                 updateFilter({
                                   type: "categories",
-                                  value: "Belt",
+                                  value: "Office",
                                   checked: true,
                                 })
                               )
                             }
                           >
                             <img
-                              src={accessories}
+                              src={officeFurniture}
                               onClick={() => setShowSearch(false)}
-                              alt="image2"
+                              alt="Office Furniture"
                               className="rounded-2xl mb-2 shadow-2xl h-[25vh]"
                             />
                           </Link>
-                          <div className="text-xs">Accessories</div>
+                          <div className="text-xs">Office Furniture</div>
                         </div>
                       </div>
                     </div>
@@ -456,17 +457,12 @@ const Navbar = () => {
       </div>
 
       <div className="hidden opacity-0 lg:flex lg:opacity-100 h-[7vh] w-[100vw] bg-[#FFD700] text-black justify-center z-[49]">
-        <ul className="flex items-center gap-5">
-          {/* <li className="hover:scale-105 cursor-pointer">Holiday Gifting</li> */}
-          <li onClick={()=>navigate('/newarrival')} className="hover:scale-105 cursor-pointer">New Arrivals</li>
-          {/* <li className="hover:scale-105 cursor-pointer">Best-Sellers</li> */}
-          <li onClick={()=>navigate('/products')} className="hover:scale-105 cursor-pointer">Clothing</li>
-          {/* <li className="hover:scale-105 cursor-pointer">Tops & Sweaters</li> */}
-          {/* <li className="hover:scale-105 cursor-pointer">Pants & Jeans</li> */}
-          {/* <li className="hover:scale-105 cursor-pointer">Outerwear</li> */}
-          {/* <li className="hover:scale-105 cursor-pointer">Shoes & Bags</li> */}
-          <li onClick={()=>navigate('/featuredproducts')}  className="hover:scale-105 cursor-pointer">Featured Products</li>
-          <li onClick={()=>navigate('/onsale')} className="text-red-600 hover:scale-105 cursor-pointer">Sale</li>
+        <ul className="flex items-center gap-5 font-medium">
+          <li onClick={() => navigate('/newarrival')} className="hover:scale-105 cursor-pointer">New Arrivals</li>
+          <li onClick={() => navigate('/products')} className="hover:scale-105 cursor-pointer">All Furniture</li>
+          <li onClick={() => navigate('/featuredproducts')} className="hover:scale-105 cursor-pointer">Featured Products</li>
+          <li onClick={() => navigate('/customfurniture')} className="hover:scale-105 cursor-pointer">Custom Orders</li>
+          <li onClick={() => navigate('/onsale')} className="text-red-600 hover:scale-105 cursor-pointer font-bold">Sale</li>
         </ul>
       </div>
     </div>

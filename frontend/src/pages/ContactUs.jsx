@@ -5,7 +5,6 @@ import {
   Phone,
   MapPin,
   MessageSquareText,
-  Users,
   Handshake,
 } from "lucide-react";
 import { apiConnector } from "../services/apiConnector";
@@ -18,20 +17,14 @@ const fadeInUp = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      duration: 0.8,
-      ease: "easeOut",
-    },
+    transition: { duration: 0.8, ease: "easeOut" },
   },
 };
-
 const staggerContainer = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.2,
-    },
+    transition: { staggerChildren: 0.2 },
   },
 };
 
@@ -44,10 +37,7 @@ const ContactUs = () => {
   });
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -56,34 +46,20 @@ const ContactUs = () => {
     try {
       const formattedData = {
         email: import.meta.env.VITE_EMAIL,
-        title: formData.subject || "No Title choosen",
+        title: formData.subject || "No Title chosen",
         body:
           formData.name && formData.email && formData.message
-            ? 
-                `name: ${formData.name}
+            ? `name: ${formData.name}
                 email: ${formData.email}
                 message: ${formData.message}`
-              
             : "No body given",
       };
 
-      const contactusRes = await apiConnector(
-        "POST",
-        endpoints.contactUs,
-        formattedData
-      );
-
-      console.log(contactusRes);
-
-      setFormData({name: "",
-    email: "",
-    subject: "",
-    message: ""})
-
+      await apiConnector("POST", endpoints.contactUs, formattedData);
+      setFormData({ name: "", email: "", subject: "", message: "" });
       toast.success("Email sent successfully!!");
     } catch (error) {
-      console.log(error);
-      toast.error("Unable to sent email.");
+      toast.error("Unable to send email.");
     }
   };
 
@@ -91,11 +67,8 @@ const ContactUs = () => {
     <div className="bg-black text-white font-sans overflow-x-hidden relative min-h-screen">
       {/* GLOBAL BACKGROUND DOTS/BLOBS - Subtle and overlay everything */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        {/* Large, slow-moving blobs */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FFD770]/5 rounded-full blur-3xl animate-blob-slow mix-blend-screen" />
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gray-700/5 rounded-full blur-3xl animate-blob-slow delay-1000 mix-blend-screen" />
-
-        {/* Smaller, faster-moving dots/particles */}
         <div className="absolute top-[10%] left-[5%] w-4 h-4 bg-[#FFD770]/20 rounded-full animate-float opacity-70" />
         <div className="absolute bottom-[20%] right-[15%] w-6 h-6 bg-gray-500/20 rounded-full animate-float delay-500 opacity-70" />
         <div className="absolute top-[30%] right-[8%] w-5 h-5 bg-[#FFD770]/20 rounded-full animate-float delay-1000 opacity-70" />
@@ -113,12 +86,10 @@ const ContactUs = () => {
         variants={fadeInUp}
       >
         <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-[#FFD770] to-yellow-500 bg-clip-text text-transparent">
-          Get in Touch with UKF-Outfits
+          Get in Touch with Mbappe Arts
         </h1>
         <p className="max-w-3xl mx-auto text-lg md:text-xl text-gray-300 leading-relaxed">
-          Got questions about our fashion collections? Whether you're curious
-          about sizes, shipping, or potential partnerships—reach out to us.
-          We're always here to help!
+          Have a question about our furniture collections or want to discuss a custom project? Reach out to Mbappe Arts — we're happy to help!
         </p>
       </motion.header>
 
@@ -141,10 +112,14 @@ const ContactUs = () => {
               Our Location
             </h2>
             <p className="text-gray-300 text-base leading-relaxed">
-              UKF-Outfits HQ
-              <br />
-              J45P+XQX, In side, chandpol, gate, Subhash Chowk, Sikar, Rajasthan 332001
+              Mbappe Arts<br />
+              Ground Floor, Plot No 75<br />
+              Post Udsar Lodera Teh Sardarshahar<br />
+              Vikash Nagar Village Bholusar<br />
+              Bholoosar, Churu District<br />
+              Rajasthan 331403
             </p>
+            
           </motion.div>
 
           {/* Call Us Card */}
@@ -159,18 +134,18 @@ const ContactUs = () => {
             <p className="text-gray-300 text-base leading-relaxed">
               Customer Care:{" "}
               <a
-                href="tel:+911234567890"
+                href="tel:+919694520525"
                 className="text-[#FFD770] hover:underline"
               >
-                +91 8741-930153
+                +91 96945 20525
               </a>
               <br />
               Email:{" "}
               <a
-                href="mailto:support@ukfoutfits.com"
+                href="mailto:mbapearts@gmail.com"
                 className="text-[#FFD770] hover:underline"
               >
-                support@ukfoutfits.com
+                mbapearts@gmail.com
               </a>
             </p>
           </motion.div>
@@ -185,13 +160,13 @@ const ContactUs = () => {
               Collaborations
             </h2>
             <p className="text-gray-300 text-base leading-relaxed">
-              For business queries and partnerships, please email:
+              For business/partnership queries, please email:
               <br />
               <a
-                href="mailto:partnerships@ukfoutfits.com"
+                href="mailto:mbapearts@gmail.com"
                 className="text-[#FFD770] hover:underline"
               >
-                partnerships@ukfoutfits.com
+                mbapearts@gmail.com
               </a>
             </p>
           </motion.div>
@@ -200,7 +175,6 @@ const ContactUs = () => {
 
       {/* Contact Form */}
       <section className="py-16 px-6 relative z-10 bg-black">
-        {/* Section specific dots/blobs */}
         <div className="absolute top-10 left-10 w-28 h-28 bg-[#FFD770]/10 rounded-full blur-2xl animate-spin-fast opacity-50" />
         <div className="absolute bottom-10 right-10 w-20 h-20 bg-gray-500/10 rounded-full blur-xl animate-pulse delay-700 opacity-50" />
 
@@ -266,40 +240,20 @@ const ContactUs = () => {
         </motion.div>
       </section>
 
-      {/* Tailwind CSS Custom Keyframes (from AboutUs page, ensured for consistency) */}
       <style jsx>{`
         @keyframes float {
-          0%,
-          100% {
-            transform: translateY(0px) translateX(0px) rotate(0deg);
-          }
-          25% {
-            transform: translateY(-10px) translateX(5px) rotate(5deg);
-          }
-          50% {
-            transform: translateY(0px) translateX(10px) rotate(0deg);
-          }
-          75% {
-            transform: translateY(10px) translateX(5px) rotate(-5deg);
-          }
-          100% {
-            transform: translateY(0px) translateX(0px) rotate(0deg);
-          }
+          0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+          25% { transform: translateY(-10px) translateX(5px) rotate(5deg); }
+          50% { transform: translateY(0px) translateX(10px) rotate(0deg); }
+          75% { transform: translateY(10px) translateX(5px) rotate(-5deg); }
+          100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
         }
-
         @keyframes float-slow {
-          0%,
-          100% {
-            transform: translateY(0px) translateX(0px);
-          }
-          50% {
-            transform: translateY(-15px) translateX(15px);
-          }
+          0%, 100% { transform: translateY(0px) translateX(0px); }
+          50% { transform: translateY(-15px) translateX(15px); }
         }
-
         @keyframes blob-slow {
-          0%,
-          100% {
+          0%, 100% {
             border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
             transform: translate(0px, 0px) scale(1);
           }
@@ -316,10 +270,8 @@ const ContactUs = () => {
             transform: translate(-10px, 10px) scale(0.95);
           }
         }
-
         @keyframes blob-medium {
-          0%,
-          100% {
+          0%, 100% {
             border-radius: 40% 60% 70% 30% / 60% 40% 60% 40%;
             transform: translate(0px, 0px) scale(1);
           }
@@ -328,10 +280,8 @@ const ContactUs = () => {
             transform: translate(20px, -20px) scale(1.1);
           }
         }
-
         @keyframes blob-fast {
-          0%,
-          100% {
+          0%, 100% {
             border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
             transform: translate(0px, 0px);
           }
@@ -340,46 +290,21 @@ const ContactUs = () => {
             transform: translate(15px, -15px);
           }
         }
-
         @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
-
         @keyframes spin-fast {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
-
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-        .animate-float-slow {
-          animation: float-slow 10s ease-in-out infinite;
-        }
-        .animate-blob-slow {
-          animation: blob-slow 12s infinite alternate;
-        }
-        .animate-blob-medium {
-          animation: blob-medium 8s infinite alternate;
-        }
-        .animate-blob-fast {
-          animation: blob-fast 6s infinite alternate;
-        }
-        .animate-spin-slow {
-          animation: spin-slow 20s linear infinite;
-        }
-        .animate-spin-fast {
-          animation: spin-fast 10s linear infinite;
-        }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-float-slow { animation: float-slow 10s ease-in-out infinite; }
+        .animate-blob-slow { animation: blob-slow 12s infinite alternate; }
+        .animate-blob-medium { animation: blob-medium 8s infinite alternate; }
+        .animate-blob-fast { animation: blob-fast 6s infinite alternate; }
+        .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+        .animate-spin-fast { animation: spin-fast 10s linear infinite; }
       `}</style>
     </div>
   );

@@ -1,5 +1,5 @@
-const BASE_URL = "https://ukf-backend.onrender.com"
-// const BASE_URL = "http://localhost:4000"
+// const BASE_URL = "https://ukf-backend.onrender.com"
+const BASE_URL = "http://localhost:4000"
 
 // AUTH ENDPOINTS
 export const endpoints = {
