@@ -1,8 +1,7 @@
-
 // controllers/productController.js
 import Product from '../models/Product.js';
 import mongoose from 'mongoose';
-import {uploadImageToCloudinary} from '../utils/imageUploader.js'
+import { uploadImageToCloudinary } from '../utils/imageUploader.js';
 
 // Helper function for building filters
 const buildFilters = (query) => {
@@ -20,9 +19,19 @@ const buildFilters = (query) => {
     filters.category = mongoose.Types.ObjectId(query.category);
   }
   
-  // Size filter
-  if (query.size) {
-    filters.size = { $in: query.size.split(',') };
+  // Room type filter
+  if (query.roomType) {
+    filters.roomType = { $in: query.roomType.split(',') };
+  }
+  
+  // Style filter
+  if (query.style) {
+    filters.style = { $in: query.style.split(',') };
+  }
+  
+  // Material filter
+  if (query.material) {
+    filters.material = { $in: query.material.split(',') };
   }
   
   // Color filter
@@ -30,9 +39,14 @@ const buildFilters = (query) => {
     filters.color = { $in: query.color.split(',') };
   }
   
-  // Gender filter
-  if (query.gender) {
-    filters.gender = query.gender;
+  // Assembly required filter
+  if (query.assemblyRequired) {
+    filters.assemblyRequired = query.assemblyRequired === 'true';
+  }
+  
+  // Eco-friendly filter
+  if (query.ecoFriendly) {
+    filters.ecoFriendly = query.ecoFriendly === 'true';
   }
   
   // Search term filter
@@ -63,7 +77,7 @@ const buildFilters = (query) => {
   return filters;
 };
 
-// Create a new product
+// Create a new furniture product
 export const createProduct = async (req, res) => {
   try {
     // Generate SKU if not provided
@@ -75,15 +89,34 @@ export const createProduct = async (req, res) => {
     
     // Generate slug if not provided
     if (!req.body.slug) {
-      req.body.slug = req.body.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+      req.body.slug = req.body.name.toLowerCase()
+        .replace(/ /g, '-')
+        .replace(/[^\w-]+/g, '');
     }
 
-     const imageFiles = req.files?.images;
+    // Parse dimensions if provided as string
+    if (req.body.dimensions && typeof req.body.dimensions === 'string') {
+      req.body.dimensions = JSON.parse(req.body.dimensions);
+    }
+
+    // Parse features if provided as string
+    if (req.body.features && typeof req.body.features === 'string') {
+      req.body.features = JSON.parse(req.body.features);
+    }
+
+    // Parse variants if provided as string
+    if (req.body.variants && typeof req.body.variants === 'string') {
+      req.body.variants = JSON.parse(req.body.variants);
+    }
+
+    // Handle image uploads
+    const imageFiles = req.files?.images;
 
     if (!imageFiles || imageFiles.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "No images uploaded" });
+      return res.status(400).json({ 
+        success: false, 
+        message: "No images uploaded" 
+      });
     }
 
     // Support both single and multiple images
@@ -91,25 +124,26 @@ export const createProduct = async (req, res) => {
 
     const uploadedImages = [];
 
-for (const file of imageArray) {
-  const cloudRes = await uploadImageToCloudinary(file, "UKF-Products");
-  uploadedImages.push({ url: cloudRes.secure_url }); // 👈 structure matters
-}
+    for (const file of imageArray) {
+      const cloudRes = await uploadImageToCloudinary(file, "Furniture-Products");
+      uploadedImages.push({ 
+        url: cloudRes.secure_url,
+        altText: req.body.name || "Furniture product image"
+      });
+    }
 
-req.body.images = uploadedImages;
-req.body.lookbookImages = uploadedImages.map(img => img.url);
+    req.body.images = uploadedImages;
+    req.body.roomSceneImages = uploadedImages.map(img => img.url);
+    
     const product = new Product(req.body);
     const savedProduct = await product.save();
     
-    console.log(savedProduct)
     res.status(201).json({ 
       success: true, 
       product: savedProduct 
     });
   } catch (error) {
-
     console.error(error);
-
     res.status(400).json({ 
       success: false, 
       message: error.message 
@@ -117,7 +151,7 @@ req.body.lookbookImages = uploadedImages.map(img => img.url);
   }
 };
 
-// Get all products with pagination and filtering
+// Get all furniture products with pagination and filtering
 export const getAllProducts = async (req, res) => {
   try {
     // Pagination
@@ -135,51 +169,26 @@ export const getAllProducts = async (req, res) => {
     }
     
     // Build filters
-const filters = {};
-    if (req.query.category) filters.category = req.query.category;
-    if (req.query.status) filters.status = req.query.status;
-    if (req.query.search) {
-      filters.$or = [
-        { name: { $regex: req.query.search, $options: 'i' } },
-        { description: { $regex: req.query.search, $options: 'i' } }
-      ];
+    const filters = buildFilters(req.query);
+    
+    // Add status filter if provided
+    if (req.query.status) {
+      filters.status = req.query.status;
     }
     
     // Get total count for pagination
     const total = await Product.countDocuments(filters);
     
     // Get products with filters, pagination, and sorting
-  const products = await Product.find(filters)
+    const products = await Product.find(filters)
       .populate('brand')
       .populate('category')
+      .populate('subCategory')
+      .sort(sort)
       .skip(skip)
       .limit(limit)
-      .lean() // Convert to plain JavaScript objects
-      .then(products => products.map(product => ({
-        ...product,
-        // Fix image URLs
-        images: product.images.map(img => {
-          // If image is already a string, return as is
-          if (typeof img === 'string') return { url: img, isDefault: false };
-          
-          // If image is broken into characters, reconstruct
-          if (img['0']) {
-            const url = Object.keys(img)
-              .filter(k => !isNaN(k))
-              .sort((a, b) => a - b)
-              .map(k => img[k])
-              .join('');
-            return { 
-              url, 
-              isDefault: img.isDefault || false,
-              _id: img._id 
-            };
-          }
-          
-          return img;
-        })
-      })));
-
+      .lean();
+    
     res.json({
       success: true,
       total,
@@ -196,7 +205,7 @@ const filters = {};
   }
 };
 
-// Get single product by ID or slug
+// Get single furniture product by ID or slug
 export const getProductById = async (req, res) => {
   try {
     let product;
@@ -205,11 +214,13 @@ export const getProductById = async (req, res) => {
     if (mongoose.Types.ObjectId.isValid(req.params.id)) {
       product = await Product.findById(req.params.id)
         .populate('category')
+        .populate('subCategory')
         .populate('brand')
         .populate('reviews.user');
     } else {
       product = await Product.findOne({ slug: req.params.id })
         .populate('category')
+        .populate('subCategory')
         .populate('brand')
         .populate('reviews.user');
     }
@@ -221,10 +232,15 @@ export const getProductById = async (req, res) => {
       });
     }
     
-    // Get related products (same category)
+    // Get related products (same category or style)
     const relatedProducts = await Product.find({
-      category: product.category,
-      _id: { $ne: product._id }
+      $or: [
+        { category: product.category },
+        { style: { $in: product.style } },
+        { roomType: { $in: product.roomType } }
+      ],
+      _id: { $ne: product._id },
+      status: 'active'
     }).limit(4);
     
     res.json({ 
@@ -240,12 +256,27 @@ export const getProductById = async (req, res) => {
   }
 };
 
-// Update an existing product
+// Update an existing furniture product
 export const updateProduct = async (req, res) => {
   try {
     // Don't allow updating SKU
     if (req.body.sku) {
       delete req.body.sku;
+    }
+
+    // Parse dimensions if provided as string
+    if (req.body.dimensions && typeof req.body.dimensions === 'string') {
+      req.body.dimensions = JSON.parse(req.body.dimensions);
+    }
+
+    // Parse features if provided as string
+    if (req.body.features && typeof req.body.features === 'string') {
+      req.body.features = JSON.parse(req.body.features);
+    }
+
+    // Parse variants if provided as string
+    if (req.body.variants && typeof req.body.variants === 'string') {
+      req.body.variants = JSON.parse(req.body.variants);
     }
 
     // Check and upload new images if provided
@@ -256,13 +287,28 @@ export const updateProduct = async (req, res) => {
       const uploadedImages = [];
 
       for (const file of imageArray) {
-        const cloudRes = await uploadImageToCloudinary(file, "UKF-Products");
-        uploadedImages.push({ url: cloudRes.secure_url });
+        const cloudRes = await uploadImageToCloudinary(file, "Furniture-Products");
+        uploadedImages.push({ 
+          url: cloudRes.secure_url,
+          altText: req.body.name || "Furniture product image"
+        });
       }
 
-      // Replace or append to existing image field
-      req.body.images = uploadedImages;
-      req.body.lookbookImages = uploadedImages.map(img => img.url);
+      // If we want to replace images completely
+      if (req.query.replaceImages === 'true') {
+        req.body.images = uploadedImages;
+        req.body.roomSceneImages = uploadedImages.map(img => img.url);
+      } else {
+        // Get existing product to append images
+        const existingProduct = await Product.findById(req.params.id);
+        if (existingProduct) {
+          req.body.images = [...existingProduct.images, ...uploadedImages];
+          req.body.roomSceneImages = [
+            ...existingProduct.roomSceneImages, 
+            ...uploadedImages.map(img => img.url)
+          ];
+        }
+      }
     }
 
     // Update product
@@ -270,7 +316,10 @@ export const updateProduct = async (req, res) => {
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    ).populate('category').populate('brand');
+    )
+    .populate('category')
+    .populate('subCategory')
+    .populate('brand');
 
     if (!updated) {
       return res.status(404).json({
@@ -292,7 +341,7 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-// Delete a product
+// Delete a furniture product
 export const deleteProduct = async (req, res) => {
   try {
     const deleted = await Product.findByIdAndDelete(req.params.id);
@@ -316,13 +365,16 @@ export const deleteProduct = async (req, res) => {
   }
 };
 
-// Get featured products
+// Get featured furniture products
 export const getFeaturedProducts = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 8;
-    const products = await Product.find({ isFeatured: true })
-      .limit(limit)
-      .populate('category brand');
+    const products = await Product.find({ 
+      isFeatured: true,
+      status: 'active'
+    })
+    .limit(limit)
+    .populate('category subCategory brand');
     
     res.json({ 
       success: true, 
@@ -336,7 +388,7 @@ export const getFeaturedProducts = async (req, res) => {
   }
 };
 
-// Get new arrivals
+// Get new furniture arrivals
 export const getNewArrivals = async (req, res) => {
   try {
     const thirtyDaysAgo = new Date();
@@ -345,11 +397,12 @@ export const getNewArrivals = async (req, res) => {
     const limit = parseInt(req.query.limit) || 8;
     const products = await Product.find({
       isNewArrival: true,
+      status: 'active',
       createdAt: { $gte: thirtyDaysAgo }
     })
     .sort({ createdAt: -1 })
     .limit(limit)
-    .populate('category brand');
+    .populate('category subCategory brand');
     
     res.json({ 
       success: true, 
@@ -363,19 +416,24 @@ export const getNewArrivals = async (req, res) => {
   }
 };
 
-// Get products on sale
+// Get furniture products on sale
 export const getProductsOnSale = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 8;
    
     const products = await Product.find({
       isOnSale: true,
+      status: 'active',
       saleStartDate: { $lte: new Date() },
-      saleEndDate: { $gte: new Date() }
+      $or: [
+        { saleEndDate: { $gte: new Date() } },
+        { saleEndDate: { $exists: false } },
+        { saleEndDate: null }
+      ]
     })
     .sort({ discountPercentage: -1 })
     .limit(limit)
-    .populate('category brand');
+    .populate('category subCategory brand');
     
     res.json({ 
       success: true, 
@@ -389,7 +447,7 @@ export const getProductsOnSale = async (req, res) => {
   }
 };
 
-// Add or update a review
+// Add or update a review for furniture
 export const addProductReview = async (req, res) => {
   try {
     const { rating, comment, title } = req.body;
@@ -444,6 +502,9 @@ export const addProductReview = async (req, res) => {
     
     await product.save();
     
+    // Populate the user info in the response
+    await product.populate('reviews.user');
+    
     res.json({ 
       success: true, 
       product 
@@ -456,7 +517,7 @@ export const addProductReview = async (req, res) => {
   }
 };
 
-// Get product statistics
+// Get furniture product statistics
 export const getProductStats = async (req, res) => {
   try {
     const stats = await Product.aggregate([
@@ -468,7 +529,14 @@ export const getProductStats = async (req, res) => {
           totalSold: { $sum: "$sold" },
           averagePrice: { $avg: "$price" },
           minPrice: { $min: "$price" },
-          maxPrice: { $max: "$price" }
+          maxPrice: { $max: "$price" },
+          // Furniture-specific stats
+          totalAssemblyRequired: {
+            $sum: { $cond: [{ $eq: ["$assemblyRequired", true] }, 1, 0] }
+          },
+          totalEcoFriendly: {
+            $sum: { $cond: [{ $eq: ["$ecoFriendly", true] }, 1, 0] }
+          }
         }
       },
       {
@@ -479,14 +547,34 @@ export const getProductStats = async (req, res) => {
           totalSold: 1,
           averagePrice: { $round: ["$averagePrice", 2] },
           minPrice: 1,
-          maxPrice: 1
+          maxPrice: 1,
+          totalAssemblyRequired: 1,
+          totalEcoFriendly: 1
         }
       }
     ]);
     
+    // Get room type distribution
+    const roomTypeStats = await Product.aggregate([
+      { $unwind: "$roomType" },
+      { $group: { _id: "$roomType", count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    
+    // Get style distribution
+    const styleStats = await Product.aggregate([
+      { $unwind: "$style" },
+      { $group: { _id: "$style", count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    
     res.json({ 
       success: true, 
-      stats: stats[0] || {} 
+      stats: {
+        ...stats[0] || {},
+        roomTypeStats,
+        styleStats
+      }
     });
   } catch (error) {
     res.status(500).json({ 
@@ -496,7 +584,7 @@ export const getProductStats = async (req, res) => {
   }
 };
 
-// Search products
+// Search furniture products
 export const searchProducts = async (req, res) => {
   try {
     const { query } = req.query;
@@ -509,16 +597,89 @@ export const searchProducts = async (req, res) => {
     }
     
     const products = await Product.find(
-      { $text: { $search: query } },
+      { 
+        $text: { $search: query },
+        status: 'active'
+      },
       { score: { $meta: "textScore" } }
     )
     .sort({ score: { $meta: "textScore" } })
-    .limit(10)
-    .populate('category');
+    .limit(20)
+    .populate('category subCategory brand');
     
     res.json({ 
       success: true, 
       products 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+};
+
+// Get products by room type
+export const getProductsByRoomType = async (req, res) => {
+  try {
+    const { roomType } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+    
+    const filters = { 
+      roomType: { $in: [roomType] },
+      status: 'active'
+    };
+    
+    const total = await Product.countDocuments(filters);
+    const products = await Product.find(filters)
+      .populate('category subCategory brand')
+      .skip(skip)
+      .limit(limit);
+    
+    res.json({
+      success: true,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      limit,
+      products
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+};
+
+// Get products by style
+export const getProductsByStyle = async (req, res) => {
+  try {
+    const { style } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+    
+    const filters = { 
+      style: { $in: [style] },
+      status: 'active'
+    };
+    
+    const total = await Product.countDocuments(filters);
+    const products = await Product.find(filters)
+      .populate('category subCategory brand')
+      .skip(skip)
+      .limit(limit);
+    
+    res.json({
+      success: true,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      limit,
+      products
     });
   } catch (error) {
     res.status(500).json({ 

@@ -22,30 +22,52 @@ const productSchema = new mongoose.Schema({
   lowStockThreshold: { type: Number, default: 5 },
   trackInventory: { type: Boolean, default: true },
   
-  // Clothing Specific Attributes
+  // Furniture Specific Attributes
   category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
-  subCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' }, // For sub-categories like T-Shirts under Men
+  subCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' }, // For sub-categories like Chairs under Living Room
   brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand' }, // Reference to Brand model
- size: {
-  type: [String],
-  enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL', '5XL', 'One Size','1','2','3','4','5','6','7','8','9','10','11','12',''],
-},
-color: {
-  type: [String],
-  required: true,
-},
-  material: { type: String }, // e.g., Cotton, Polyester, etc.
-  fabric: { type: String }, // More specific than material
-  weight: { type: Number }, // In grams
-
-  fit: { type: String, enum: ['Slim', 'Regular', 'Oversized', 'Relaxed',''] },
-  sleeveLength: { type: String, enum: ['Short', 'Half', 'Long', 'Sleeveless',''] },
-
-  pattern: { type: String }, // e.g., Striped, Printed, Solid, etc.
-  occasion: { type: String }, // e.g., Casual, Formal, Party, etc.
-  season: { type: String, enum: ['Summer', 'Winter', 'Spring', 'Fall', 'All Season',''] },
-  gender: { type: String, enum: ['Men', 'Women', 'Unisex', 'Kids', 'Boys', 'Girls',''] },
-  ageGroup: { type: String }, // For kids clothing
+  
+  // Furniture Dimensions
+  dimensions: {
+    length: { type: Number }, // in cm or inches
+    width: { type: Number },
+    height: { type: Number },
+    unit: { type: String, enum: ['cm', 'inches'], default: 'cm' }
+  },
+  weight: { type: Number }, // In kg or lbs
+  
+  // Furniture Properties
+  roomType: { 
+    type: [String], 
+    enum: ['Living Room', 'Bedroom', 'Dining Room', 'Kitchen', 'Bathroom', 'Office', 'Outdoor', 'Entryway', 'Kids Room', 'Other']
+  },
+  style: {
+    type: [String],
+    enum: ['Modern', 'Contemporary', 'Minimalist', 'Mid-Century', 'Industrial', 'Traditional', 'Transitional', 'Rustic', 'Coastal', 'Scandinavian', 'Bohemian', 'Farmhouse', 'Art Deco', 'Asian', 'Other']
+  },
+  material: { 
+    type: [String],
+    enum: ['Wood', 'Metal', 'Glass', 'Plastic', 'Fabric', 'Leather', 'Marble', 'Stone', 'Rattan', 'Wicker', 'Bamboo', 'Other']
+  },
+  color: {
+    type: [String],
+    required: true,
+  },
+  finish: { type: String }, // e.g., Matte, Glossy, Distressed, etc.
+  
+  // Features & Functionality
+  features: [{
+    name: String,
+    value: String
+  }],
+  assemblyRequired: { type: Boolean, default: false },
+  assemblyTime: { type: Number }, // in minutes
+  weightCapacity: { type: Number }, // in kg or lbs
+  
+  // Sustainability
+  ecoFriendly: { type: Boolean, default: false },
+  sustainableMaterials: { type: Boolean, default: false },
+  certifications: [{ type: String }], // e.g., FSC, Greenguard, etc.
   
   // Media
   images: [{ 
@@ -54,12 +76,14 @@ color: {
     isDefault: { type: Boolean, default: false }
   }],
   video: { type: String }, // URL to product video
-  lookbookImages: [{ type: String }], // Styled images
+  roomSceneImages: [{ type: String }], // Room setting images
+  dimensionDiagram: { type: String }, // Image with dimension markings
   
   // Variants
   variants: [{
     color: String,
-    size: String,
+    material: String,
+    finish: String,
     price: Number,
     stock: Number,
     sku: String,
@@ -103,17 +127,20 @@ color: {
   }],
   
   // Shipping
-  weight: { type: Number }, // In grams
+  shippingWeight: { type: Number }, // In kg or lbs
   shippingClass: { type: String },
   freeShipping: { type: Boolean, default: false },
+  flatShippingRate: { type: Number }, // Fixed shipping cost if applicable
+  deliveryTime: { type: String }, // e.g., "5-7 business days"
   
   // Additional Information
   careInstructions: { type: String },
+  warranty: { type: String }, // Warranty information
   tags: [{ type: String }],
   customFields: mongoose.Schema.Types.Mixed, // For any additional custom fields
   
   // Status
-  status: { type: String, enum: ['draft', 'active', 'archived'], default: 'draft' },
+  status: { type: String, enum: ['draft', 'active', 'archived', 'discontinued'], default: 'draft' },
   
   // Dates
   releaseDate: { type: Date }, // For pre-orders
@@ -131,11 +158,19 @@ productSchema.virtual('discountPercentage').get(function() {
   return Math.round(((this.comparePrice - this.price) / this.comparePrice) * 100);
 });
 
+// Virtual for inStock status
+productSchema.virtual('inStock').get(function() {
+  return this.stock > 0;
+});
+
 // Indexes for better performance
 productSchema.index({ name: 'text', description: 'text', tags: 'text' });
 productSchema.index({ category: 1, isFeatured: 1 });
 productSchema.index({ price: 1 });
-productSchema.index({ ratings: -1 });
+productSchema.index({ 'ratings.average': -1 });
+productSchema.index({ roomType: 1 });
+productSchema.index({ style: 1 });
+productSchema.index({ material: 1 });
 
 // Pre-save hook to calculate profit margin
 productSchema.pre('save', function(next) {
