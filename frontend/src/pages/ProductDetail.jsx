@@ -156,40 +156,55 @@ export default function ProductDetail() {
 
   // Fetch user's orders to check eligibility for review
   const checkReviewEligibility = async () => {
-    if (!user || !token || !product?._id) return;
+    if (!user || !token || !product?._id) {
+      setCanReview(false);
+      return;
+    }
 
     try {
-      const ordersRes = await apiConnector("GET", orderEndpoints.userOrdersWithoutPagination, null, {
-        Authorization: `Bearer ${token}`
-      });
+      const ordersRes = await apiConnector(
+        "GET", 
+        orderEndpoints.userOrdersWithoutPagination, 
+        null, 
+        {
+          Authorization: `Bearer ${token}`
+        }
+      );
 
-      console.log("order response : ",ordersRes)
+      console.log("Orders Response:", ordersRes.data);
 
       if (ordersRes.data.success) {
+        // Check for delivered orders containing this product
         const deliveredOrders = ordersRes.data.orders.filter(order => 
           order.currentStatus === "Delivered" && 
-          order.items.some(item => item.product?.id === product._id)
+          order.items.some(item => item.product === product._id)
         );
 
+        console.log("Delivered Orders:", deliveredOrders);
         setEligibleOrders(deliveredOrders);
         setCanReview(deliveredOrders.length > 0);
 
-        // Check if user already has a review for this product
-        if (deliveredOrders.length > 0) {
-          const reviewRes = await apiConnector("GET", 
-            `${reviewEndpoints.getUserReviewForProduct}${product._id}/user`, 
+        // Check for existing review
+        try {
+          const reviewRes = await apiConnector(
+            "GET", 
+            `${reviewEndpoints.getUserReviewForProduct}/${product._id}`, 
             null, 
             { Authorization: `Bearer ${token}` }
           );
+
+          console.log("Review Response:", reviewRes.data);
           
-          if (reviewRes.data && !reviewRes.data.message) {
-            setExistingReview(reviewRes.data);
+          if (reviewRes.data && reviewRes.data.review) {
+            setExistingReview(reviewRes.data.review);
             setReviewForm({
-              rating: reviewRes.data.rating,
-              comment: reviewRes.data.comment,
-              selectedOrderId: reviewRes.data.order
+              rating: reviewRes.data.review.rating,
+              comment: reviewRes.data.review.comment,
+              selectedOrderId: reviewRes.data.review.order
             });
           }
+        } catch (reviewError) {
+          console.log("Error fetching review:", reviewError);
         }
       }
     } catch (error) {
@@ -203,14 +218,15 @@ export default function ProductDetail() {
 
     try {
       setReviewsLoading(true);
-      const reviewsRes = await apiConnector("GET", 
-        `${reviewEndpoints.getReviewByProductId}${product._id}`
+      const response = await apiConnector(
+        "GET", 
+        `${reviewEndpoints.getReviewByProductId}/${product._id}`
       );
 
-      console.log("this is the review response",reviewsRes);
+      console.log("Reviews Response:", response.data);
 
-      if (reviewsRes.data) {
-        setReviews(reviewsRes.data.reviews || []);
+      if (response.data && response.data.reviews) {
+        setReviews(response.data.reviews);
       }
     } catch (error) {
       console.log("Error fetching reviews:", error);
@@ -694,8 +710,8 @@ export default function ProductDetail() {
               <span className="relative z-10">Buy Now</span>
             </button>
 
-            {/* Review Button */}
-            {userRole === "user" && canReview && (
+            {/* Review Button - Updated Condition */}
+            {user && (canReview || existingReview) && (
               <button
                 onClick={() => setShowReviewModal(true)}
                 className="relative border-2 border-green-500 text-green-500 px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:bg-green-500 hover:text-black hover:scale-105 hover:shadow-lg active:scale-95 overflow-hidden group"
