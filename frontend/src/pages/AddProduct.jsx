@@ -751,7 +751,7 @@ const AddProduct = () => {
                 placeholder="Price (required)"
                 value={formData.price}
                 onChange={(e) => handleInputChange('price', e.target.value)}
-                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-red-600/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
               />
 
               <input
@@ -775,7 +775,7 @@ const AddProduct = () => {
                 placeholder="Stock(required)"
                 value={formData.stock}
                 onChange={(e) => handleInputChange('stock', e.target.value)}
-                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-red-700/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
               />
               
               <input
