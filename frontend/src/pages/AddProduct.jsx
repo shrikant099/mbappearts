@@ -381,7 +381,7 @@ const AddProduct = () => {
       stock: prod.stock || "",
       lowStockThreshold: prod.lowStockThreshold || "",
       category: prod.category?._id || "",
-      subCategory: prod.subCategory || "",
+      subCategory: prod.category?._id || "",
       brand: prod.brand?._id || "",
       length: prod.dimensions?.length || "",
       width: prod.dimensions?.width || "",
