@@ -70,10 +70,10 @@ const Navbar = () => {
         throw new Error(response.data.message || "Failed to save cart");
       }
 
-      toast.success("Cart saved successfully");
+     
     } catch (error) {
       console.error("Error saving cart:", error);
-      toast.error("Failed to save cart");
+      
     } finally {
       setIsSavingCart(false);
     }
@@ -491,13 +491,8 @@ const Navbar = () => {
         <ul className="flex items-center gap-5 font-medium">
           <li 
             onClick={() => {
-              dispatch(clearFilters());
-              dispatch(updateFilter({
-                type: "isNewArrival",
-                value: true,
-                checked: true
-              }));
-              navigate('/products');
+              
+              navigate('/newarrival');
             }} 
             className="hover:scale-105 cursor-pointer"
           >
@@ -514,13 +509,8 @@ const Navbar = () => {
           </li>
           <li 
             onClick={() => {
-              dispatch(clearFilters());
-              dispatch(updateFilter({
-                type: "isFeatured",
-                value: true,
-                checked: true
-              }));
-              navigate('/products');
+             
+              navigate('/featuredproducts');
             }} 
             className="hover:scale-105 cursor-pointer"
           >
@@ -528,13 +518,8 @@ const Navbar = () => {
           </li>
           <li 
             onClick={() => {
-              dispatch(clearFilters());
-              dispatch(updateFilter({
-                type: "isOnSale",
-                value: true,
-                checked: true
-              }));
-              navigate('/products');
+              
+              navigate('/onsale');
             }} 
             className="text-red-600 hover:scale-105 cursor-pointer font-bold"
           >
