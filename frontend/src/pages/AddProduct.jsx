@@ -28,6 +28,9 @@ const AddProduct = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editId, setEditId] = useState(null);
 
+  // Validation state
+  const [validationErrors, setValidationErrors] = useState({});
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -88,6 +91,72 @@ const AddProduct = () => {
   const [images, setImages] = useState({});
   const [videoFile, setVideoFile] = useState(null);
   const [dimensionDiagramFile, setDimensionDiagramFile] = useState(null);
+
+  // Define required fields
+  const requiredFields = {
+    name: "Product Name",
+    description: "Description",
+    price: "Price",
+    stock: "Stock",
+    category: "Category",
+    color: "Color" // Array field - at least one color required
+  };
+
+  // Validation function
+  const validateForm = () => {
+    const errors = {};
+    
+    // Check text/number required fields
+    Object.keys(requiredFields).forEach(field => {
+      if (field === 'color') {
+        // Special handling for color array
+        if (!formData[field] || formData[field].length === 0) {
+          errors[field] = `${requiredFields[field]} is required`;
+        }
+      } else if (!formData[field] || formData[field].toString().trim() === "") {
+        errors[field] = `${requiredFields[field]} is required`;
+      }
+    });
+
+    // Additional validation for sale dates if product is on sale
+    if (formData.isOnSale) {
+      if (!formData.saleStartDate) {
+        errors.saleStartDate = "Sale start date is required when product is on sale";
+      }
+      if (!formData.saleEndDate) {
+        errors.saleEndDate = "Sale end date is required when product is on sale";
+      }
+      if (formData.saleStartDate && formData.saleEndDate) {
+        const startDate = new Date(formData.saleStartDate);
+        const endDate = new Date(formData.saleEndDate);
+        if (startDate >= endDate) {
+          errors.saleEndDate = "Sale end date must be after start date";
+        }
+      }
+    }
+
+    // Validate that at least one image is uploaded for new products
+    if (!showEditModal && Object.keys(images).length === 0) {
+      errors.images = "At least one product image is required";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Clear validation errors when field is updated
+  const handleInputChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+    
+    // Clear validation error for this field
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
 
   // Available options for furniture
   const roomTypeOptions = [
@@ -185,6 +254,15 @@ const AddProduct = () => {
   const handleSingleImageChange = (e, index) => {
     const file = e.target.files[0];
     setImages((prev) => ({ ...prev, [index]: file }));
+    
+    // Clear image validation error if file is selected
+    if (file && validationErrors.images) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.images;
+        return newErrors;
+      });
+    }
   };
 
   const handleVideoChange = (e) => {
@@ -224,14 +302,25 @@ const AddProduct = () => {
     setImageInputs((prev) => [...prev, prev.length]);
   };
 
-  // Handle multi-select arrays
+  // Handle multi-select arrays with validation
   const handleArrayChange = (field, value) => {
+    const newArray = formData[field].includes(value) 
+      ? formData[field].filter(item => item !== value)
+      : [...formData[field], value];
+    
     setFormData(prev => ({
       ...prev,
-      [field]: prev[field].includes(value) 
-        ? prev[field].filter(item => item !== value)
-        : [...prev[field], value]
+      [field]: newArray
     }));
+
+    // Clear validation error for color field if at least one color is selected
+    if (field === 'color' && newArray.length > 0 && validationErrors.color) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.color;
+        return newErrors;
+      });
+    }
   };
 
   // Handle features
@@ -263,26 +352,14 @@ const AddProduct = () => {
   };
 
   const handleSubmit = async (edit = false) => {
+    // Validate form before submission
+    if (!validateForm()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
     try {
       dispatch(setLoading(true));
-      
-      // Validation for sale dates
-      if (formData.isOnSale) {
-        if (!formData.saleStartDate || !formData.saleEndDate) {
-          toast.error("Please provide both sale start and end dates when marking as on sale");
-          dispatch(setLoading(false));
-          return;
-        }
-        
-        const startDate = new Date(formData.saleStartDate);
-        const endDate = new Date(formData.saleEndDate);
-        
-        if (startDate >= endDate) {
-          toast.error("Sale end date must be after start date");
-          dispatch(setLoading(false));
-          return;
-        }
-      }
       
       const payload = new FormData();
       const numericFields = ["price", "comparePrice", "costPerItem", "stock", "lowStockThreshold", 
@@ -419,6 +496,7 @@ const AddProduct = () => {
     setImageInputs([0]);
     setVideoFile(null);
     setDimensionDiagramFile(null);
+    setValidationErrors({});
     setShowEditModal(true);
   };
 
@@ -474,7 +552,16 @@ const AddProduct = () => {
     setImageInputs([0]);
     setVideoFile(null);
     setDimensionDiagramFile(null);
+    setValidationErrors({});
   };
+
+  // Helper function to render field label with required asterisk
+  const renderFieldLabel = (fieldKey, label, isRequired = false) => (
+    <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">
+      {label}
+      {isRequired && <span className="text-red-500 ml-1">*</span>}
+    </label>
+  );
 
   return (
     <div className="w-[100vw] lg:w-[calc(100vw-256px)] p-3 sm:p-6 text-black overflow-y-auto min-h-[100vh]">
@@ -632,58 +719,107 @@ const AddProduct = () => {
                 <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Basic Information</h4>
               </div>
               
-              {/* Text Inputs */}
-              {[
-                "name",
-                "shortDescription",
-                "price",
-                "comparePrice",
-                "costPerItem",
-                "stock",
-                "lowStockThreshold"
-              ].map((key) => (
+              {/* Required Text Inputs */}
+              {/* Name - Required */}
+              <div>
+                {renderFieldLabel('name', 'Product Name', true)}
                 <input
-                  key={key}
-                  type={
-                    ["price", "stock", "comparePrice", "costPerItem", "lowStockThreshold"].includes(key)
-                      ? "number"
-                      : "text"
-                  }
-                  placeholder={key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
-                  value={formData[key]}
-                  onChange={(e) =>
-                    setFormData({ ...formData, [key]: e.target.value })
-                  }
-                  className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+                  type="text"
+                  placeholder="Product Name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  className={`w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm sm:text-base ${
+                    validationErrors.stock ? 'border-red-500' : 'border-[#FFD770]/40 focus:border-[#FFD770]/80'
+                  }`}
                 />
-              ))}
+                {validationErrors.stock && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.stock}</p>
+                )}
+              </div>
 
-              {/* Category and Brand */}
-              <select
-                value={formData.category}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    category: e.target.value,
-                    subCategory: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm sm:text-base"
-              >
-                <option className="bg-black" value="">Select Category</option>
-                {categories.map((cat) => (
-                  <option className="bg-black" key={cat._id} value={cat._id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+              {/* Optional Fields */}
+              <input
+                type="text"
+                placeholder="Short Description"
+                value={formData.shortDescription}
+                onChange={(e) => handleInputChange('shortDescription', e.target.value)}
+                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+              />
+              
+                <input
+                type="number"
+                placeholder="Price (required)"
+                value={formData.price}
+                onChange={(e) => handleInputChange('price', e.target.value)}
+                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+              />
 
+              <input
+                type="number"
+                placeholder="Compare Price"
+                value={formData.comparePrice}
+                onChange={(e) => handleInputChange('comparePrice', e.target.value)}
+                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+              />
+              
+              <input
+                type="number"
+                placeholder="Cost Per Item"
+                value={formData.costPerItem}
+                onChange={(e) => handleInputChange('costPerItem', e.target.value)}
+                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+              />
+
+               <input
+                type="number"
+                placeholder="Stock(required)"
+                value={formData.stock}
+                onChange={(e) => handleInputChange('stock', e.target.value)}
+                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+              />
+              
+              <input
+                type="number"
+                placeholder="Low Stock Threshold"
+                value={formData.lowStockThreshold}
+                onChange={(e) => handleInputChange('lowStockThreshold', e.target.value)}
+                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+              />
+
+              {/* Category - Required */}
+              <div>
+                {renderFieldLabel('category', 'Category', true)}
+                <select
+                  value={formData.category}
+                  onChange={(e) =>
+                    handleInputChange('category', e.target.value) ||
+                    setFormData({
+                      ...formData,
+                      category: e.target.value,
+                      subCategory: e.target.value,
+                    })
+                  }
+                  className={`w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border rounded-md text-sm sm:text-base ${
+                    validationErrors.category ? 'border-red-500' : 'border-[#FFD770]/40'
+                  }`}
+                >
+                  <option className="bg-black" value="">Select Category</option>
+                  {categories.map((cat) => (
+                    <option className="bg-black" key={cat._id} value={cat._id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+                {validationErrors.category && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.category}</p>
+                )}
+              </div>
+
+              {/* Brand - Optional */}
               <select
                 value={formData.brand}
-                onChange={(e) =>
-                  setFormData({ ...formData, brand: e.target.value })
-                }
-                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm sm:text-base"
+                onChange={(e) => handleInputChange('brand', e.target.value)}
+                className="w-full px-3 g:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm sm:text-base"
               >
                 <option className="bg-black" value="">Select Brand</option>
                 {brands.map((b) => (
@@ -702,7 +838,7 @@ const AddProduct = () => {
                 type="number"
                 placeholder="Length"
                 value={formData.length}
-                onChange={(e) => setFormData({ ...formData, length: e.target.value })}
+                onChange={(e) => handleInputChange('length', e.target.value)}
                 className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
               />
               
@@ -710,7 +846,7 @@ const AddProduct = () => {
                 type="number"
                 placeholder="Width"
                 value={formData.width}
-                onChange={(e) => setFormData({ ...formData, width: e.target.value })}
+                onChange={(e) => handleInputChange('width', e.target.value)}
                 className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
               />
               
@@ -718,13 +854,13 @@ const AddProduct = () => {
                 type="number"
                 placeholder="Height"
                 value={formData.height}
-                onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                onChange={(e) => handleInputChange('height', e.target.value)}
                 className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
               />
               
               <select
                 value={formData.dimensionUnit}
-                onChange={(e) => setFormData({ ...formData, dimensionUnit: e.target.value })}
+                onChange={(e) => handleInputChange('dimensionUnit', e.target.value)}
                 className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm sm:text-base"
               >
                 <option className="bg-black" value="cm">CM</option>
@@ -735,7 +871,7 @@ const AddProduct = () => {
                 type="number"
                 placeholder="Weight (kg)"
                 value={formData.weight}
-                onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                onChange={(e) => handleInputChange('weight', e.target.value)}
                 className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
               />
 
@@ -816,9 +952,9 @@ const AddProduct = () => {
                 </div>
               </div>
 
-              {/* Color Selection */}
+              {/* Color Selection - Required */}
               <div className="lg:col-span-3">
-                <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">Colors</label>
+                {renderFieldLabel('color', 'Colors', true)}
                 <div className="flex flex-wrap gap-2">
                   {colorOptions.map((color) => (
                     <button
@@ -838,12 +974,15 @@ const AddProduct = () => {
                 <div className="mt-2 text-xs sm:text-sm text-[#FFD770]/80">
                   Selected: {formData.color.length > 0 ? formData.color.join(', ') : 'None'}
                 </div>
+                {validationErrors.color && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.color}</p>
+                )}
               </div>
 
               {/* Finish */}
               <select
                 value={formData.finish}
-                onChange={(e) => setFormData({ ...formData, finish: e.target.value })}
+                onChange={(e) => handleInputChange('finish', e.target.value)}
                 className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm sm:text-base"
               >
                 <option className="bg-black" value="">Select Finish</option>
@@ -859,7 +998,7 @@ const AddProduct = () => {
                 type="number"
                 placeholder="Assembly Time (minutes)"
                 value={formData.assemblyTime}
-                onChange={(e) => setFormData({ ...formData, assemblyTime: e.target.value })}
+                onChange={(e) => handleInputChange('assemblyTime', e.target.value)}
                 className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
               />
 
@@ -867,18 +1006,26 @@ const AddProduct = () => {
                 type="number"
                 placeholder="Weight Capacity (kg)"
                 value={formData.weightCapacity}
-                onChange={(e) => setFormData({ ...formData, weightCapacity: e.target.value })}
+                onChange={(e) => handleInputChange('weightCapacity', e.target.value)}
                 className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
               />
             </div>
 
-            {/* Description */}
-            <textarea
-              placeholder="Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="mt-4 w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none h-20 sm:h-24 text-sm sm:text-base"
-            />
+            {/* Description - Required */}
+            <div className="mt-4">
+              {renderFieldLabel('description', 'Description', true)}
+              <textarea
+                placeholder="Product Description"
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                className={`w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border rounded-md placeholder:text-[#FFD770]/60 focus:outline-none h-20 sm:h-24 text-sm sm:text-base ${
+                  validationErrors.description ? 'border-red-500' : 'border-[#FFD770]/40'
+                }`}
+              />
+              {validationErrors.description && (
+                <p className="text-red-500 text-xs mt-1">{validationErrors.description}</p>
+              )}
+            </div>
 
             {/* Features Section */}
             <div className="mt-6">
@@ -951,7 +1098,7 @@ const AddProduct = () => {
                   type="number"
                   placeholder="Shipping Weight (kg)"
                   value={formData.shippingWeight}
-                  onChange={(e) => setFormData({ ...formData, shippingWeight: e.target.value })}
+                  onChange={(e) => handleInputChange('shippingWeight', e.target.value)}
                   className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
                 />
                 
@@ -959,7 +1106,7 @@ const AddProduct = () => {
                   type="text"
                   placeholder="Shipping Class"
                   value={formData.shippingClass}
-                  onChange={(e) => setFormData({ ...formData, shippingClass: e.target.value })}
+                  onChange={(e) => handleInputChange('shippingClass', e.target.value)}
                   className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
                 />
                 
@@ -967,7 +1114,7 @@ const AddProduct = () => {
                   type="number"
                   placeholder="Flat Shipping Rate"
                   value={formData.flatShippingRate}
-                  onChange={(e) => setFormData({ ...formData, flatShippingRate: e.target.value })}
+                  onChange={(e) => handleInputChange('flatShippingRate', e.target.value)}
                   className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
                 />
                 
@@ -975,7 +1122,7 @@ const AddProduct = () => {
                   type="text"
                   placeholder="Delivery Time (e.g., 7-10 business days)"
                   value={formData.deliveryTime}
-                  onChange={(e) => setFormData({ ...formData, deliveryTime: e.target.value })}
+                  onChange={(e) => handleInputChange('deliveryTime', e.target.value)}
                   className="lg:col-span-3 w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
                 />
               </div>
@@ -988,15 +1135,15 @@ const AddProduct = () => {
                 <textarea
                   placeholder="Care Instructions"
                   value={formData.careInstructions}
-                  onChange={(e) => setFormData({ ...formData, careInstructions: e.target.value })}
-                  className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none h-20 text-sm"
+                  onChange={(e) => handleInputChange('careInstructions', e.target.value)}
+                  className="w-full px-3 pt-6 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none h-20 text-sm"
                 />
                 
                 <input
                   type="text"
                   placeholder="Warranty (e.g., 1 Year Manufacturer Warranty)"
                   value={formData.warranty}
-                  onChange={(e) => setFormData({ ...formData, warranty: e.target.value })}
+                  onChange={(e) => handleInputChange('warranty', e.target.value)}
                   className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
                 />
               </div>
@@ -1010,7 +1157,7 @@ const AddProduct = () => {
                   type="text"
                   placeholder="Country of Origin"
                   value={formData.countryOfOrigin}
-                  onChange={(e) => setFormData({ ...formData, countryOfOrigin: e.target.value })}
+                  onChange={(e) => handleInputChange('countryOfOrigin', e.target.value)}
                   className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
                 />
               </div>
@@ -1033,7 +1180,7 @@ const AddProduct = () => {
                     type="checkbox"
                     checked={formData[key]}
                     onChange={(e) =>
-                      setFormData({ ...formData, [key]: e.target.checked })
+                      handleInputChange(key, e.target.checked)
                     }
                     className="w-4 h-4"
                   />
@@ -1054,6 +1201,15 @@ const AddProduct = () => {
                       saleStartDate: isChecked ? formData.saleStartDate : "",
                       saleEndDate: isChecked ? formData.saleEndDate : ""
                     });
+                    // Clear validation errors when unchecking
+                    if (!isChecked) {
+                      setValidationErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors.saleStartDate;
+                        delete newErrors.saleEndDate;
+                        return newErrors;
+                      });
+                    }
                   }}
                   className="w-4 h-4"
                 />
@@ -1070,7 +1226,7 @@ const AddProduct = () => {
                   <input
                     type="date"
                     value={formData.releaseDate}
-                    onChange={(e) => setFormData({ ...formData, releaseDate: e.target.value })}
+                    onChange={(e) => handleInputChange('releaseDate', e.target.value)}
                     className="w-full px-3 py-2 bg-yellow-700 text-yellow-100 border border-[#FFD770]/40 rounded-md focus:outline-none text-sm"
                   />
                 </div>
@@ -1078,25 +1234,35 @@ const AddProduct = () => {
                 {formData.isOnSale && (
                   <>
                     <div>
-                      <label className="block font-semibold mb-2 text-[#FFD770] text-sm">Sale Start Date *</label>
+                      {renderFieldLabel('saleStartDate', 'Sale Start Date', true)}
                       <input
                         type="date"
                         value={formData.saleStartDate}
-                        onChange={(e) => setFormData({ ...formData, saleStartDate: e.target.value })}
-                        className="w-full px-3 py-2  bg-yellow-700 text-yellow-100 border border-[#FFD770]/40 rounded-md focus:outline-none text-sm"
+                        onChange={(e) => handleInputChange('saleStartDate', e.target.value)}
+                        className={`w-full px-3 py-2 bg-yellow-700 text-yellow-100 border rounded-md focus:outline-none text-sm ${
+                          validationErrors.saleStartDate ? 'border-red-500' : 'border-[#FFD770]/40'
+                        }`}
                         required={formData.isOnSale}
                       />
+                      {validationErrors.saleStartDate && (
+                        <p className="text-red-500 text-xs mt-1">{validationErrors.saleStartDate}</p>
+                      )}
                     </div>
                     <div>
-                      <label className="block font-semibold mb-2 text-[#FFD770] text-sm">Sale End Date *</label>
+                      {renderFieldLabel('saleEndDate', 'Sale End Date', true)}
                       <input
                         type="date"
                         value={formData.saleEndDate}
-                        onChange={(e) => setFormData({ ...formData, saleEndDate: e.target.value })}
-                        className="w-full px-3 py-2  bg-yellow-700 text-yellow-100 border border-[#FFD770]/40 rounded-md focus:outline-none text-sm"
+                        onChange={(e) => handleInputChange('saleEndDate', e.target.value)}
+                        className={`w-full px-3 py-2 bg-yellow-700 text-yellow-100 border rounded-md focus:outline-none text-sm ${
+                          validationErrors.saleEndDate ? 'border-red-500' : 'border-[#FFD770]/40'
+                        }`}
                         required={formData.isOnSale}
                         min={formData.saleStartDate}
                       />
+                      {validationErrors.saleEndDate && (
+                        <p className="text-red-500 text-xs mt-1">{validationErrors.saleEndDate}</p>
+                      )}
                     </div>
                   </>
                 )}
@@ -1109,16 +1275,21 @@ const AddProduct = () => {
               
               {/* Product Images */}
               <div className="mb-4">
-                <label className="block font-semibold mb-2 text-sm sm:text-base">Product Images</label>
+                {renderFieldLabel('images', 'Product Images', !showEditModal)}
                 {imageInputs.map((key) => (
                   <input
                     key={key}
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleSingleImageChange(e, key)}
-                    className="mb-2 w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm"
+                    className={`mb-2 w-full px-3 py-2 bg-black/30 text-[#FFD770] border rounded-md text-sm ${
+                      validationErrors.images ? 'border-red-500' : 'border-[#FFD770]/40'
+                    }`}
                   />
                 ))}
+                {validationErrors.images && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.images}</p>
+                )}
                 <button
                   type="button"
                   onClick={handleAddMoreImages}
@@ -1138,6 +1309,8 @@ const AddProduct = () => {
                   className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm"
                 />
               </div>
+              
+              
               
               {/* Dimension Diagram */}
               <div className="mb-4">
