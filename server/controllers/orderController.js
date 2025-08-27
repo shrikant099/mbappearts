@@ -558,7 +558,9 @@ export const updateOrderStatus = async (req, res) => {
     if(status === 'Shipped') {
       order.trackingNumber = req.body.trackingId || '';
       order.trackingCompany = req.body.courier || 'India Post';
-      sendTrackingEmail(user.profile.email,user.name,order.trackingNumber,'',order.trackingCompany);
+      if(user.profile.email) {
+        sendTrackingEmail(user.profile.email,user.name,order.trackingNumber,'',order.trackingCompany);
+      }
     }
    
     // Handle refund if order is cancelled after payment
