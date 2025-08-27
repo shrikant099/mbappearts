@@ -31,8 +31,8 @@ const Products = () => {
   const color = useSelector((state) => state.filters.color);
   const size = useSelector((state) => state.filters.size);
   const filters = useSelector((state) => state.filters);
+  const search = useSelector((state) => state.filters.searchQuery); // Updated to match filterSlice
   const season = useSelector((state) => state.filters.season);
-  const search = useSelector((state) => state.search.searchData);
 
   const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * productsPerPage,
@@ -80,15 +80,16 @@ const Products = () => {
 
     // Debounce the filtering
     filterTimeoutRef.current = setTimeout(() => {
-      const areFiltersEmpty =
-        categories.length === 0 &&
-        gender.length === 0 &&
-        material.length === 0 &&
-        season.length === 0 &&
-        color.length === 0 &&
-        size.length === 0 &&
-        (!filters.priceRange ||
-          (filters.priceRange.min === 0 && filters.priceRange.max === 10000)) &&
+      const areFiltersEmpty = 
+        !filters.category && 
+        !filters.subCategory &&
+        filters.roomType.length === 0 &&
+        filters.style.length === 0 &&
+        filters.material.length === 0 &&
+        filters.color.length === 0 &&
+        (!filters.priceRange || 
+          (filters.priceRange.min === 0 && 
+           filters.priceRange.max === 1000000)) &&
         !search;
 
       if (areFiltersEmpty) {
@@ -100,41 +101,78 @@ const Products = () => {
 
       let filtered = [...products];
 
-      if (categories.length > 0) {
-        filtered = filtered.filter((product) =>
-          categories.includes(product.category?.name)
+      // Category filter
+      if (filters.category) {
+        filtered = filtered.filter(product => 
+          product.category?._id === filters.category
         );
       }
-      if (gender.length > 0) {
-        filtered = filtered.filter((product) =>
-          gender.includes(product.gender)
+
+      // Sub-category filter
+      if (filters.subCategory) {
+        filtered = filtered.filter(product => 
+          product.subCategory?._id === filters.subCategory
         );
       }
-      if (material.length > 0) {
-        filtered = filtered.filter((product) =>
-          material.includes(product.material)
+
+      // Room type filter
+      if (filters.roomType.length > 0) {
+        filtered = filtered.filter(product =>
+          product.roomType.some(room => filters.roomType.includes(room))
         );
       }
-      if (color.length > 0) {
-        filtered = filtered.filter((product) => color.includes(product.color));
+
+      // Style filter
+      if (filters.style.length > 0) {
+        filtered = filtered.filter(product =>
+          product.style.some(s => filters.style.includes(s))
+        );
       }
-      if (size.length > 0) {
-        filtered = filtered.filter((product) => size.includes(product.size));
+
+      // Material filter
+      if (filters.material.length > 0) {
+        filtered = filtered.filter(product =>
+          product.material.some(m => filters.material.includes(m))
+        );
       }
-      if (season.length > 0) {
-        filtered = filtered.filter((product) => season.includes(product.season));
+
+      // Color filter
+      if (filters.color.length > 0) {
+        filtered = filtered.filter(product =>
+          product.color.some(c => filters.color.includes(c))
+        );
       }
+
+      // Price range filter
       if (filters.priceRange) {
-        filtered = filtered.filter((product) =>
+        filtered = filtered.filter(product =>
           product.price >= filters.priceRange.min && 
           product.price <= filters.priceRange.max
         );
       }
+
+      // Boolean filters
+      if (filters.ecoFriendly) {
+        filtered = filtered.filter(product => product.ecoFriendly);
+      }
+
+      if (filters.assemblyRequired !== null) {
+        filtered = filtered.filter(product => 
+          product.assemblyRequired === filters.assemblyRequired
+        );
+      }
+
+      if (filters.freeShipping) {
+        filtered = filtered.filter(product => product.freeShipping);
+      }
+
+      // Search query
       if (search) {
-        filtered = filtered.filter(
-          (product) =>
-            product.name.toLowerCase().includes(search.toLowerCase()) ||
-            product.description.toLowerCase().includes(search.toLowerCase())
+        const searchLower = search.toLowerCase();
+        filtered = filtered.filter(product =>
+          product.name.toLowerCase().includes(searchLower) ||
+          product.description.toLowerCase().includes(searchLower) ||
+          product.tags?.some(tag => tag.toLowerCase().includes(searchLower))
         );
       }
 
@@ -149,7 +187,7 @@ const Products = () => {
         clearTimeout(filterTimeoutRef.current);
       }
     };
-  }, [products, categories, gender, season, material, color, size, search, filters.priceRange]);
+  }, [products, filters, search]);
 
   return (
     <div className="flex flex-col lg:flex-row bg-black text-[#FFD700] min-h-screen">

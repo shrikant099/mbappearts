@@ -6,6 +6,7 @@ import { categoryEndpoints } from "../../services/api";
 import { useSelector, useDispatch } from "react-redux";
 import { updateFilter } from "../../slices/filterSlice";
 import { setIsOpen } from "../../slices/productSlice";
+import { ROOM_TYPES, STYLES, MATERIALS } from "../../slices/filterSlice";
 
 const { getAllCategory } = categoryEndpoints;
 
@@ -63,7 +64,18 @@ const ProductSidebar = () => {
   }, []); // Only run on mount
 
   const handleCheckboxChange = (type, value, checked) => {
-    dispatch(updateFilter({ type, value, checked }));
+    if (type === "category") {
+      // For category, we want to set the value directly when checked
+      // and clear it when unchecked
+      dispatch(updateFilter({ 
+        type,
+        value: checked ? value : null,
+        checked: true // Always true for radio buttons
+      }));
+    } else {
+      // For array-based filters (roomType, material, style, etc.)
+      dispatch(updateFilter({ type, value, checked }));
+    }
   };
 
   const handlePriceRangeChange = (type, value) => {
@@ -138,17 +150,16 @@ const ProductSidebar = () => {
             <h2 className="text-xl font-semibold mb-2">Categories</h2>
             {categories.length > 0 ? (
               categories.filter((cat) => cat.status === "active").map((cat) => (
-                <label key={cat._id} className="flex items-center mb-1">
+                <label key={cat._id} className="flex items-center mb-1 cursor-pointer">
                   <input
-                    type="checkbox"
-                    value={cat.name}
-                    checked={filters.categories?.includes(cat.name) || false}
-                    onChange={(e) =>
-                      handleCheckboxChange("categories", cat.name, e.target.checked)
-                    }
-                    className="mr-2"
+                    type="radio"
+                    name="category"
+                    value={cat._id}
+                    checked={filters.category === cat._id}
+                    onChange={(e) => handleCheckboxChange("category", cat._id, true)}
+                    className="mr-2 cursor-pointer"
                   />
-                  {cat.name}
+                  <span className="cursor-pointer">{cat.name}</span>
                 </label>
               ))
             ) : (
@@ -245,10 +256,10 @@ const ProductSidebar = () => {
             </div>
           </div>
 
-          {/* Room Type - Replacing Gender */}
+          {/* Room Type */}
           <div>
             <h2 className="text-xl font-semibold mb-2">Room Type</h2>
-            {["Living Room", "Bedroom", "Dining Room", "Office", "Kitchen", "Outdoor"].map((room) => (
+            {ROOM_TYPES.map((room) => (
               <label key={room} className="flex items-center mb-1">
                 <input
                   type="checkbox"
@@ -264,67 +275,80 @@ const ProductSidebar = () => {
             ))}
           </div>
 
-          {/* Material - Updated for furniture materials */}
+          {/* Material */}
           <div>
             <h2 className="text-xl font-semibold mb-2">Material</h2>
-            {["Wood", "Metal", "Glass", "Plastic", "Fabric", "Leather", "Marble", "Rattan"].map(
-              (material) => (
-                <label key={material} className="flex items-center mb-1">
-                  <input
-                    type="checkbox"
-                    value={material}
-                    checked={filters.material?.includes(material) || false}
-                    onChange={(e) =>
-                      handleCheckboxChange("material", material, e.target.checked)
-                    }
-                    className="mr-2"
-                  />
-                  {material}
-                </label>
-              )
-            )}
+            {MATERIALS.map((material) => (
+              <label key={material} className="flex items-center mb-1">
+                <input
+                  type="checkbox"
+                  value={material}
+                  checked={filters.material?.includes(material) || false}
+                  onChange={(e) =>
+                    handleCheckboxChange("material", material, e.target.checked)
+                  }
+                  className="mr-2"
+                />
+                {material}
+              </label>
+            ))}
           </div>
 
-          {/* Style - Replacing Season */}
+          {/* Style */}
           <div>
             <h2 className="text-xl font-semibold mb-2">Style</h2>
-            {["Modern", "Contemporary", "Traditional", "Industrial", "Rustic", "Minimalist"].map(
-              (style) => (
-                <label key={style} className="flex items-center mb-1">
-                  <input
-                    type="checkbox"
-                    value={style}
-                    checked={filters.style?.includes(style) || false}
-                    onChange={(e) =>
-                      handleCheckboxChange("style", style, e.target.checked)
-                    }
-                    className="mr-2"
-                  />
-                  {style}
-                </label>
-              )
-            )}
+            {STYLES.map((style) => (
+              <label key={style} className="flex items-center mb-1">
+                <input
+                  type="checkbox"
+                  value={style}
+                  checked={filters.style?.includes(style) || false}
+                  onChange={(e) =>
+                    handleCheckboxChange("style", style, e.target.checked)
+                  }
+                  className="mr-2"
+                />
+                {style}
+              </label>
+            ))}
           </div>
 
-          {/* Color */}
+          {/* Additional Filters */}
           <div>
-            <h2 className="text-xl font-semibold mb-2">Color</h2>
-            {["Brown", "Black", "White", "Natural Wood", "Gray", "Blue", "Red", "Green"].map(
-              (color) => (
-                <label key={color} className="flex items-center mb-1">
-                  <input
-                    type="checkbox"
-                    value={color}
-                    checked={filters.color?.includes(color) || false}
-                    onChange={(e) =>
-                      handleCheckboxChange("color", color, e.target.checked)
-                    }
-                    className="mr-2"
-                  />
-                  {color}
-                </label>
-              )
-            )}
+            <h2 className="text-xl font-semibold mb-2">Additional Filters</h2>
+            <label className="flex items-center mb-1">
+              <input
+                type="checkbox"
+                checked={filters.ecoFriendly || false}
+                onChange={(e) =>
+                  handleCheckboxChange("ecoFriendly", e.target.checked, e.target.checked)
+                }
+                className="mr-2"
+              />
+              Eco-Friendly
+            </label>
+            <label className="flex items-center mb-1">
+              <input
+                type="checkbox"
+                checked={filters.assemblyRequired || false}
+                onChange={(e) =>
+                  handleCheckboxChange("assemblyRequired", e.target.checked, e.target.checked)
+                }
+                className="mr-2"
+              />
+              Assembly Required
+            </label>
+            <label className="flex items-center mb-1">
+              <input
+                type="checkbox"
+                checked={filters.freeShipping || false}
+                onChange={(e) =>
+                  handleCheckboxChange("freeShipping", e.target.checked, e.target.checked)
+                }
+                className="mr-2"
+              />
+              Free Shipping
+            </label>
           </div>
         </div>
       </div>

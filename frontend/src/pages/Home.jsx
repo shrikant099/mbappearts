@@ -15,12 +15,14 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { clearFilters, updateFilter } from "../slices/filterSlice";
 import AnimatedBackground from "../components/AnimatedBackground";
-import { reviewEndpoints } from "../services/api";
+import { reviewEndpoints, categoryEndpoints } from "../services/api";
 import { apiConnector } from "../services/apiConnector";
 import video from "../assets/images/3770034-hd_1920_1080_25fps.mp4"
-const {topReview} = reviewEndpoints;
 
-// Replace these with real furniture images!
+const { topReview } = reviewEndpoints;
+const { getAllCategories } = categoryEndpoints; // Add this to your API endpoints
+
+// Fallback images for categories
 const categoryImages = {
   sofa: "https://media.designcafe.com/wp-content/uploads/2021/04/15173304/trending-sofa-designs-for-your-home.jpg",
   bed: "https://www.nilkamalfurniture.com/cdn/shop/files/Mozart_16721e45-a1b5-4c99-907a-8fc634c73955.webp?v=1753176850",
@@ -28,6 +30,8 @@ const categoryImages = {
   chair: "https://ikiru.in/cdn/shop/files/buy-dining-chair-acme-curve-wood-and-grey-upholstery-dining-chair-set-of-2-or-chairs-for-dining-room-and-home-by-orange-tree-on-ikiru-online-store-1.jpg?v=1739208850",
   desk: "https://ergosphere.in/wp-content/uploads/2022/05/BD390-Teak-Render-Grey-UCurve.png",
   storage: "https://www.aboutspace.in/cdn/shop/files/51dKDTVDesL.jpg?v=1723610704",
+  table: "https://media.designcafe.com/wp-content/uploads/2021/04/15173304/trending-sofa-designs-for-your-home.jpg",
+  default: "https://via.placeholder.com/400x600/1f2937/ffffff?text=Category"
 };
 
 const featuredImages = {
@@ -42,15 +46,52 @@ const Home = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
   const [videoPlaying, setVideoPlaying] = useState(true);
-  const [reviews,setReviews] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const fetchTopReview = async ()=>{
-    try{
-      const topreview = await apiConnector("GET",topReview);
+  // Fetch top reviews
+  const fetchTopReview = async () => {
+    try {
+      const topreview = await apiConnector("GET", topReview);
       const dataReview = topreview?.data?.reviews;
-      setReviews(dataReview.slice(0,Math.min(3,dataReview.length)));
-    }catch(error){
-      console.log("error in finding top reviews : ",error)
+      setReviews(dataReview?.slice(0, Math.min(3, dataReview.length)) || []);
+    } catch (error) {
+      console.log("Error fetching top reviews:", error);
+    }
+  }
+
+  // Fetch categories from database
+  const fetchCategories = async () => {
+    try {
+      const response = await apiConnector("GET", getAllCategories);
+      const fetchedCategories = response?.data?.categories || [];
+      
+      // Filter active categories and add fallback images
+      const activeCategories = fetchedCategories
+        .filter(cat => cat.status === 'active')
+        .slice(0, 6) // Limit to 6 categories for display
+        .map((cat, index) => {
+          // Try to match category name to get appropriate image
+          const categoryKey = cat.name.toLowerCase().replace(/\s+/g, '');
+          const imageKey = Object.keys(categoryImages).find(key => 
+            categoryKey.includes(key) || cat.name.toLowerCase().includes(key)
+          ) || 'default';
+          
+          return {
+            ...cat,
+            image: categoryImages[imageKey] || categoryImages.default,
+            key: cat._id
+          };
+        });
+      
+      setCategories(activeCategories);
+    } catch (error) {
+      console.log("Error fetching categories:", error);
+      // Set fallback categories if API fails
+      setCategories([]);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -58,13 +99,27 @@ const Home = () => {
     dispatch(clearFilters());
     setTimeout(() => setIsVisible(true), 100);
     fetchTopReview();
-  }, []); // Empty dependency array is critical
+    fetchCategories();
+  }, [dispatch]);
 
+  // Handle category click
   const handleCategoryClick = (category) => {
+    dispatch(clearFilters()); // Clear existing filters first
     dispatch(updateFilter({
-        type: "categories",
-        value: category.filterValue,
-        checked: true,
+      type: "category", // Changed from "categories" to match filterSlice
+      value: category._id,
+      checked: true
+    }));
+    navigate("/products");
+  };
+
+  // Handle room type filtering
+  const handleRoomTypeClick = (roomType) => {
+    dispatch(clearFilters()); // Clear existing filters first
+    dispatch(updateFilter({
+      type: "roomType",
+      value: roomType,
+      checked: true
     }));
     navigate("/products");
   };
@@ -72,17 +127,20 @@ const Home = () => {
   const handleShopNowClick = () => navigate("/products");
   const handleLearnMoreClick = () => navigate("/about");
 
-  // Memoize categories for furniture
-  const categoryData = useMemo(() => [
-    { name: "Sofas", image: categoryImages.sofa, filterValue: "Sofas", key: "sofa" },
-    { name: "Beds", image: categoryImages.bed, filterValue: "Beds", key: "bed" },
-    { name: "Dining", image: categoryImages.dining, filterValue: "Dining", key: "dining" },
-    { name: "Chairs", image: categoryImages.chair, filterValue: "Chairs", key: "chair" },
-    { name: "Desks", image: categoryImages.desk, filterValue: "Desks", key: "desk" },
-    { name: "Storage", image: categoryImages.storage, filterValue: "Storage", key: "storage" },
+  // Fallback category data if database fetch fails
+  const fallbackCategoryData = useMemo(() => [
+    { name: "Sofas", image: categoryImages.sofa, _id: "fallback-sofa", key: "sofa" },
+    { name: "Beds", image: categoryImages.bed, _id: "fallback-bed", key: "bed" },
+    { name: "Dining Tables", image: categoryImages.dining, _id: "fallback-dining", key: "dining" },
+    { name: "Chairs", image: categoryImages.chair, _id: "fallback-chair", key: "chair" },
+    { name: "Desks", image: categoryImages.desk, _id: "fallback-desk", key: "desk" },
+    { name: "Storage", image: categoryImages.storage, _id: "fallback-storage", key: "storage" },
   ], []);
 
-  // Memoized featured sections
+  // Use fetched categories or fallback
+  const displayCategories = categories.length > 0 ? categories : fallbackCategoryData;
+
+  // Featured sections with room type filtering
   const featuredSections = useMemo(() => [
     {
       image: featuredImages.livingroom,
@@ -90,7 +148,7 @@ const Home = () => {
       buttonText: "Discover Sofas & More",
       icon: Sparkles,
       key: "livingroom",
-      link: '/living-room'
+      roomType: "Living Room" // Matches Product model enum
     },
     {
       image: featuredImages.bedroom,
@@ -98,7 +156,7 @@ const Home = () => {
       buttonText: "Explore Beds",
       icon: Star,
       key: "bedroom",
-      link: '/bedroom'
+      roomType: "Bedroom" // Matches Product model enum
     },
     {
       image: featuredImages.workspace,
@@ -106,7 +164,7 @@ const Home = () => {
       buttonText: "Shop Desks & Chairs",
       icon: Heart,
       key: "workspace",
-      link: '/office'
+      roomType: "Office" // Matches Product model enum
     },
   ], []);
 
@@ -173,7 +231,6 @@ const Home = () => {
       <AnimatedBackground />
       {/* Hero Section */}
       <div className="relative min-h-screen overflow-hidden group">
-        {/* Video Background (optional - keep or use hero image) */}
         <div className="absolute inset-0 z-0">
           <video
             autoPlay
@@ -186,10 +243,7 @@ const Home = () => {
             onError={() => setVideoPlaying(false)}
             style={{ filter: "brightness(0.7)" }}
           >
-            <source
-              src={video}
-              type="video/mp4"
-            />
+            <source src={video} type="video/mp4" />
           </video>
           {!videoPlaying && (
             <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-800" />
@@ -228,6 +282,7 @@ const Home = () => {
           </div>
         </div>
       </div>
+
       {/* Shop By Category */}
       <div className="py-16 lg:py-24 px-6 relative bg-gradient-to-b from-black to-gray-900">
         <div className="text-center mb-16">
@@ -236,32 +291,42 @@ const Home = () => {
           </h2>
           <div className="w-24 h-1 bg-gradient-to-r from-yellow-400 to-yellow-600 mx-auto rounded-full animate-pulse" />
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 lg:gap-6 max-w-7xl mx-auto">
-          {categoryData.map((category, index) => (
-            <div
-              key={category.key}
-              className="group cursor-pointer transition-all duration-700 hover:scale-110 hover:-translate-y-6 hover:shadow-2xl hover:shadow-yellow-400/25"
-              onClick={() => handleCategoryClick(category)}
-            >
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-400 to-yellow-600 p-1 shadow-2xl hover:shadow-yellow-400/50">
-                <div className="relative bg-black rounded-3xl overflow-hidden aspect-[3/4]">
-                  <ImageWithFallback
-                    src={category.image}
-                    alt={category.name}
-                    imageKey={category.key}
-                    className="w-full h-full"
-                  />
-                </div>
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center">
-                  <h3 className="text-white font-bold text-lg lg:text-xl drop-shadow-2xl group-hover:text-yellow-300">
-                    {category.name}
-                  </h3>
+        
+        {loading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 lg:gap-6 max-w-7xl mx-auto">
+            {Array(6).fill(0).map((_, index) => (
+              <div key={index} className="aspect-[3/4] bg-gray-800 animate-pulse rounded-3xl" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 lg:gap-6 max-w-7xl mx-auto">
+            {displayCategories.map((category, index) => (
+              <div
+                key={category._id || category.key}
+                className="group cursor-pointer transition-all duration-700 hover:scale-110 hover:-translate-y-6 hover:shadow-2xl hover:shadow-yellow-400/25"
+                onClick={() => handleCategoryClick(category)}
+              >
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-400 to-yellow-600 p-1 shadow-2xl hover:shadow-yellow-400/50">
+                  <div className="relative bg-black rounded-3xl overflow-hidden aspect-[3/4]">
+                    <ImageWithFallback
+                      src={category.image}
+                      alt={category.name}
+                      imageKey={category._id || category.key}
+                      className="w-full h-full"
+                    />
+                  </div>
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center">
+                    <h3 className="text-white font-bold text-lg lg:text-xl drop-shadow-2xl group-hover:text-yellow-300">
+                      {category.name}
+                    </h3>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
+
       {/* Featured Sections */}
       <div className="py-16 lg:py-24 px-6 bg-gradient-to-b from-gray-900 to-black relative">
         <div className="text-center mb-16">
@@ -277,7 +342,7 @@ const Home = () => {
               <div
                 key={section.key}
                 className="group relative overflow-hidden rounded-3xl shadow-2xl hover:shadow-yellow-400/30 transition-all duration-800 hover:scale-105 hover:-translate-y-4 cursor-pointer"
-                onClick={()=>navigate(section.link)}
+                onClick={() => handleRoomTypeClick(section.roomType)}
               >
                 <div className="relative h-80 lg:h-96 overflow-hidden">
                   <ImageWithFallback
@@ -304,6 +369,7 @@ const Home = () => {
           })}
         </div>
       </div>
+
       {/* Mission Section */}
       <div className="relative py-20 lg:py-32 px-6 overflow-hidden">
         <div className="absolute inset-0">
@@ -323,7 +389,7 @@ const Home = () => {
             We are on a mission to bring quality and beauty to your home.
           </h2>
           <p className="text-xl lg:text-2xl text-yellow-200 mb-8 drop-shadow-lg">
-            Read about our craftsmanship &amp; sustainability
+            Read about our craftsmanship & sustainability
           </p>
           <button
             onClick={handleLearnMoreClick}
@@ -333,6 +399,7 @@ const Home = () => {
           </button>
         </div>
       </div>
+
       {/* Features Section */}
       <div className="py-16 lg:py-24 px-6 bg-gradient-to-b from-black to-gray-900">
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -359,6 +426,7 @@ const Home = () => {
           })}
         </div>
       </div>
+
       {/* Stats & Testimonials Section */}
       <div className="py-16 lg:py-24 px-6 bg-gradient-to-br from-yellow-900 via-yellow-800 to-black relative overflow-hidden">
         <div className="relative z-10 max-w-7xl mx-auto">
@@ -388,6 +456,7 @@ const Home = () => {
               ))}
             </div>
           </div>
+
           {/* Testimonials Section */}
           <div className="grid md:grid-cols-3 gap-8">
             {reviews.map((testimonial, index) => (
@@ -397,11 +466,11 @@ const Home = () => {
               >
                 <div className="flex items-center mb-4">
                   <div className="text-4xl mr-4 group-hover:scale-110 transition-transform duration-300">
-                    <img src={testimonial.user.image} className="h-[40px] w-[40px] rounded-full"  alt="😊" />
+                    <img src={testimonial.user?.image} className="h-[40px] w-[40px] rounded-full" alt="Customer" />
                   </div>
                   <div>
                     <h4 className="text-yellow-400 font-bold text-lg">
-                      {testimonial.user.name}
+                      {testimonial.user?.name}
                     </h4>
                     <p className="text-gray-300 text-sm">Customer</p>
                   </div>
@@ -420,6 +489,7 @@ const Home = () => {
               </div>
             ))}
           </div>
+
           {/* Call to Action */}
           <div className="text-center mt-16">
             <div className="inline-block p-4 bg-yellow-400/20 backdrop-blur-sm rounded-full mb-8 animate-bounce border border-yellow-400/30">

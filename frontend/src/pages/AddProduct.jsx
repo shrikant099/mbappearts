@@ -36,19 +36,40 @@ const AddProduct = () => {
     comparePrice: "",
     costPerItem: "",
     stock: "",
+    lowStockThreshold: "",
     category: "",
     subCategory: "",
     brand: "",
-    size: [],
+    // Dimensions
+    length: "",
+    width: "",
+    height: "",
+    dimensionUnit: "cm",
+    weight: "",
+    // Furniture specific
+    roomType: [],
+    style: [],
+    material: [],
     color: [],
-    material: "",
-    fabric: "",
-    fit: "",
-    sleeveLength: "",
-    pattern: "",
-    occasion: "",
-    season: "",
-    gender: "",
+    finish: "",
+    // Features
+    features: [{ name: "", value: "" }],
+    assemblyRequired: false,
+    assemblyTime: "",
+    weightCapacity: "",
+    ecoFriendly: false,
+    sustainableMaterials: false,
+    certifications: [],
+    // Shipping
+    shippingWeight: "",
+    shippingClass: "",
+    freeShipping: false,
+    flatShippingRate: "",
+    deliveryTime: "",
+    // Care and warranty
+    careInstructions: "",
+    warranty: "",
+    // Status
     status: "active",
     isFeatured: false,
     isNewArrival: false,
@@ -56,18 +77,45 @@ const AddProduct = () => {
     isOnSale: false,
     saleStartDate: "",
     saleEndDate: "",
-    lookbookImages: [],
+    // Release date
+    releaseDate: "",
+    // Custom fields
+    countryOfOrigin: "",
+    handcrafted: false,
   });
 
   const [imageInputs, setImageInputs] = useState([0]);
   const [images, setImages] = useState({});
+  const [videoFile, setVideoFile] = useState(null);
+  const [dimensionDiagramFile, setDimensionDiagramFile] = useState(null);
 
-  // Available options for sizes and colors
-  const sizeOptions = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "4XL", "5XL", "One Size", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+  // Available options for furniture
+  const roomTypeOptions = [
+    "Living Room", "Bedroom", "Dining Room", "Kitchen", "Office", 
+    "Study Room", "Bathroom", "Balcony", "Garden", "Kids Room"
+  ];
+  
+  const styleOptions = [
+    "Modern", "Traditional", "Contemporary", "Vintage", "Industrial", 
+    "Scandinavian", "Minimalist", "Rustic", "Classic", "Art Deco"
+  ];
+  
+  const materialOptions = [
+    "Wood", "Metal", "Glass", "Plastic", "Fabric", "Leather", 
+    "Marble", "Stone", "Rattan", "Bamboo", "MDF", "Plywood"
+  ];
+  
   const colorOptions = [
-    "Red", "Blue", "Green", "Yellow", "Black", "White", "Gray", "Brown", 
-    "Orange", "Purple", "Pink", "Navy", "Maroon", "Olive", "Teal", "Silver",
-    "Gold", "Beige", "Cream", "Tan", "Coral", "Mint", "Lavender", "Peach"
+    "White", "Black", "Brown", "Natural", "Gray", "Beige", "Blue", 
+    "Green", "Red", "Yellow", "Oak", "Walnut", "Mahogany", "Pine"
+  ];
+
+  const finishOptions = [
+    "Matte", "Glossy", "Satin", "Natural", "Polished", "Brushed", "Distressed"
+  ];
+
+  const certificationOptions = [
+    "FSC Certified", "GREENGUARD Gold", "CARB Phase 2", "ISO 14001", "Cradle to Cradle"
   ];
 
   const getAllCategories = async () => {
@@ -101,6 +149,7 @@ const AddProduct = () => {
       dispatch(setLoading(false));
     }
   };
+  
   const [brands, setBrands] = useState([]);
 
   const fetchBrands = async () => {
@@ -141,6 +190,14 @@ const AddProduct = () => {
     setImages((prev) => ({ ...prev, [index]: file }));
   };
 
+  const handleVideoChange = (e) => {
+    setVideoFile(e.target.files[0]);
+  };
+
+  const handleDimensionDiagramChange = (e) => {
+    setDimensionDiagramFile(e.target.files[0]);
+  };
+
   const handleDeleteProduct = async (id) => {
     try {
       dispatch(setLoading(true));
@@ -154,7 +211,7 @@ const AddProduct = () => {
       });
       if (res.data.success) {
         toast.success("Product deleted successfully!");
-        getAllProducts(); // Refresh table
+        getAllProducts();
       } else {
         toast.error("Deletion failed");
       }
@@ -170,27 +227,38 @@ const AddProduct = () => {
     setImageInputs((prev) => [...prev, prev.length]);
   };
 
-  // Handle size selection
-  const handleSizeChange = (size) => {
+  // Handle multi-select arrays
+  const handleArrayChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
-      size: prev.size.includes(size) 
-        ? prev.size.filter(s => s !== size)
-        : [...prev.size, size]
+      [field]: prev[field].includes(value) 
+        ? prev[field].filter(item => item !== value)
+        : [...prev[field], value]
     }));
   };
 
-  // Handle color selection
-  const handleColorChange = (color) => {
+  // Handle features
+  const handleFeatureChange = (index, field, value) => {
+    const updatedFeatures = [...formData.features];
+    updatedFeatures[index][field] = value;
+    setFormData(prev => ({ ...prev, features: updatedFeatures }));
+  };
+
+  const addFeature = () => {
     setFormData(prev => ({
       ...prev,
-      color: prev.color.includes(color) 
-        ? prev.color.filter(c => c !== color)
-        : [...prev.color, color]
+      features: [...prev.features, { name: "", value: "" }]
     }));
   };
 
-  // Format date for input field (convert from ISO to YYYY-MM-DD)
+  const removeFeature = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      features: prev.features.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Format date for input field
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -220,19 +288,26 @@ const AddProduct = () => {
       }
       
       const payload = new FormData();
-      const numericFields = ["price", "comparePrice", "costPerItem", "stock"];
+      const numericFields = ["price", "comparePrice", "costPerItem", "stock", "lowStockThreshold", 
+                           "length", "width", "height", "weight", "assemblyTime", "weightCapacity", 
+                           "shippingWeight", "flatShippingRate"];
 
       Object.entries(formData).forEach(([key, value]) => {
         if (numericFields.includes(key)) {
-          const numVal = Number(value);
-          if (isNaN(numVal)) throw new Error(`Invalid ${key} value`);
-          payload.append(key, numVal);
+          if (value !== "") {
+            const numVal = Number(value);
+            if (isNaN(numVal)) throw new Error(`Invalid ${key} value`);
+            payload.append(key, numVal);
+          }
         } else if (Array.isArray(value)) {
-          // Handle arrays (size, color, etc.)
-          value.forEach((v) => payload.append(key, v));
-        } else if (key === 'saleStartDate' || key === 'saleEndDate') {
-          // Handle date fields - only append if isOnSale is true and dates are provided
-          if (formData.isOnSale && value) {
+          // Handle arrays
+          if (key === 'features') {
+            payload.append(key, JSON.stringify(value.filter(f => f.name && f.value)));
+          } else {
+            value.forEach((v) => payload.append(key, v));
+          }
+        } else if (key === 'saleStartDate' || key === 'saleEndDate' || key === 'releaseDate') {
+          if (value) {
             payload.append(key, new Date(value).toISOString());
           }
         } else {
@@ -240,9 +315,36 @@ const AddProduct = () => {
         }
       });
 
+      // Handle dimensions as nested object
+      if (formData.length || formData.width || formData.height) {
+        const dimensions = {
+          length: formData.length ? Number(formData.length) : undefined,
+          width: formData.width ? Number(formData.width) : undefined,
+          height: formData.height ? Number(formData.height) : undefined,
+          unit: formData.dimensionUnit
+        };
+        payload.append('dimensions', JSON.stringify(dimensions));
+      }
+
+      // Handle custom fields
+      const customFields = {
+        countryOfOrigin: formData.countryOfOrigin,
+        handcrafted: formData.handcrafted
+      };
+      payload.append('customFields', JSON.stringify(customFields));
+
+      // Handle images
       Object.values(images).forEach((file) => {
         payload.append("images", file);
       });
+
+      // Handle video and dimension diagram
+      if (videoFile) {
+        payload.append("video", videoFile);
+      }
+      if (dimensionDiagramFile) {
+        payload.append("dimensionDiagram", dimensionDiagramFile);
+      }
 
       const endpoint = edit ? `${updateProduct}${editId}` : createProduct;
       const method = edit ? "PUT" : "POST";
@@ -257,8 +359,7 @@ const AddProduct = () => {
       toast.success(edit ? "Product updated!" : "Product created!");
       setShowAddModal(false);
       setShowEditModal(false);
-      setImageInputs([0]);
-      setImages({});
+      resetForm();
       getAllProducts();
     } catch (err) {
       console.log(err);
@@ -278,19 +379,34 @@ const AddProduct = () => {
       comparePrice: prod.comparePrice || "",
       costPerItem: prod.costPerItem || "",
       stock: prod.stock || "",
+      lowStockThreshold: prod.lowStockThreshold || "",
       category: prod.category?._id || "",
       subCategory: prod.subCategory || "",
       brand: prod.brand?._id || "",
-      size: Array.isArray(prod.size) ? prod.size : [],
+      length: prod.dimensions?.length || "",
+      width: prod.dimensions?.width || "",
+      height: prod.dimensions?.height || "",
+      dimensionUnit: prod.dimensions?.unit || "cm",
+      weight: prod.weight || "",
+      roomType: Array.isArray(prod.roomType) ? prod.roomType : [],
+      style: Array.isArray(prod.style) ? prod.style : [],
+      material: Array.isArray(prod.material) ? prod.material : [],
       color: Array.isArray(prod.color) ? prod.color : [],
-      material: prod.material || "",
-      fabric: prod.fabric || "",
-      fit: prod.fit || "",
-      sleeveLength: prod.sleeveLength || "",
-      pattern: prod.pattern || "",
-      occasion: prod.occasion || "",
-      season: prod.season || "",
-      gender: prod.gender || "",
+      finish: prod.finish || "",
+      features: Array.isArray(prod.features) ? prod.features : [{ name: "", value: "" }],
+      assemblyRequired: prod.assemblyRequired || false,
+      assemblyTime: prod.assemblyTime || "",
+      weightCapacity: prod.weightCapacity || "",
+      ecoFriendly: prod.ecoFriendly || false,
+      sustainableMaterials: prod.sustainableMaterials || false,
+      certifications: Array.isArray(prod.certifications) ? prod.certifications : [],
+      shippingWeight: prod.shippingWeight || "",
+      shippingClass: prod.shippingClass || "",
+      freeShipping: prod.freeShipping || false,
+      flatShippingRate: prod.flatShippingRate || "",
+      deliveryTime: prod.deliveryTime || "",
+      careInstructions: prod.careInstructions || "",
+      warranty: prod.warranty || "",
       status: prod.status || "active",
       isFeatured: prod.isFeatured || false,
       isNewArrival: prod.isNewArrival || false,
@@ -298,10 +414,14 @@ const AddProduct = () => {
       isOnSale: prod.isOnSale || false,
       saleStartDate: formatDateForInput(prod.saleStartDate) || "",
       saleEndDate: formatDateForInput(prod.saleEndDate) || "",
-      lookbookImages: prod.lookbookImages || [],
+      releaseDate: formatDateForInput(prod.releaseDate) || "",
+      countryOfOrigin: prod.customFields?.countryOfOrigin || "",
+      handcrafted: prod.customFields?.handcrafted || false,
     });
     setImages({});
     setImageInputs([0]);
+    setVideoFile(null);
+    setDimensionDiagramFile(null);
     setShowEditModal(true);
   };
 
@@ -314,19 +434,34 @@ const AddProduct = () => {
       comparePrice: "",
       costPerItem: "",
       stock: "",
+      lowStockThreshold: "",
       category: "",
       subCategory: "",
       brand: "",
-      size: [],
+      length: "",
+      width: "",
+      height: "",
+      dimensionUnit: "cm",
+      weight: "",
+      roomType: [],
+      style: [],
+      material: [],
       color: [],
-      material: "",
-      fabric: "",
-      fit: "",
-      sleeveLength: "",
-      pattern: "",
-      occasion: "",
-      season: "",
-      gender: "",
+      finish: "",
+      features: [{ name: "", value: "" }],
+      assemblyRequired: false,
+      assemblyTime: "",
+      weightCapacity: "",
+      ecoFriendly: false,
+      sustainableMaterials: false,
+      certifications: [],
+      shippingWeight: "",
+      shippingClass: "",
+      freeShipping: false,
+      flatShippingRate: "",
+      deliveryTime: "",
+      careInstructions: "",
+      warranty: "",
       status: "active",
       isFeatured: false,
       isNewArrival: false,
@@ -334,10 +469,14 @@ const AddProduct = () => {
       isOnSale: false,
       saleStartDate: "",
       saleEndDate: "",
-      lookbookImages: [],
+      releaseDate: "",
+      countryOfOrigin: "",
+      handcrafted: false,
     });
     setImages({});
     setImageInputs([0]);
+    setVideoFile(null);
+    setDimensionDiagramFile(null);
   };
 
   return (
@@ -369,7 +508,7 @@ const AddProduct = () => {
         </div>
       ) : (
         <>
-          {/* Desktop Table View - Hidden on mobile */}
+          {/* Desktop Table View */}
           <div className="hidden lg:block overflow-x-auto shadow-lg rounded-lg">
             <table className="min-w-[700px] w-full bg-white rounded">
               <thead className="bg-[#FFD770]">
@@ -413,10 +552,7 @@ const AddProduct = () => {
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan="8"
-                      className="px-4 py-6 text-center text-gray-500"
-                    >
+                    <td colSpan="8" className="px-4 py-6 text-center text-gray-500">
                       No products found
                     </td>
                   </tr>
@@ -425,7 +561,7 @@ const AddProduct = () => {
             </table>
           </div>
 
-          {/* Mobile/Tablet Card View - Hidden on desktop */}
+          {/* Mobile Card View */}
           <div className="lg:hidden space-y-4">
             {Array.isArray(filtered) && filtered.length > 0 ? (
               filtered.map((prod, idx) => (
@@ -485,14 +621,20 @@ const AddProduct = () => {
         </>
       )}
 
+      {/* Modal */}
       {(showAddModal || showEditModal) && (
         <div className="fixed z-[151] inset-0 bg-black/80 backdrop-blur-md flex justify-center items-center p-2 sm:p-4">
-          <div className="bg-[#111] text-[#FFD770] p-4 sm:p-6 rounded-xl max-w-4xl w-full hidescroll max-h-[95vh] overflow-y-auto shadow-[0_0_20px_rgba(255,215,112,0.3)] animate-fade-in border border-[#FFD770]/30 transition-all duration-300">
+          <div className="bg-[#111] text-[#FFD770] p-4 sm:p-6 rounded-xl max-w-6xl w-full hidescroll max-h-[95vh] overflow-y-auto shadow-[0_0_20px_rgba(255,215,112,0.3)] animate-fade-in border border-[#FFD770]/30 transition-all duration-300">
             <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center uppercase">
               {showAddModal ? "Add Product" : "Edit Product"}
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {/* Basic Information */}
+              <div className="lg:col-span-3">
+                <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Basic Information</h4>
+              </div>
+              
               {/* Text Inputs */}
               {[
                 "name",
@@ -501,21 +643,16 @@ const AddProduct = () => {
                 "comparePrice",
                 "costPerItem",
                 "stock",
-                "material",
-                "fabric",
-                "pattern",
-                "occasion",
+                "lowStockThreshold"
               ].map((key) => (
                 <input
                   key={key}
                   type={
-                    ["price", "stock", "comparePrice", "costPerItem"].includes(
-                      key
-                    )
+                    ["price", "stock", "comparePrice", "costPerItem", "lowStockThreshold"].includes(key)
                       ? "number"
                       : "text"
                   }
-                  placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
+                  placeholder={key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
                   value={formData[key]}
                   onChange={(e) =>
                     setFormData({ ...formData, [key]: e.target.value })
@@ -524,39 +661,173 @@ const AddProduct = () => {
                 />
               ))}
 
-              {/* Size Selection */}
-              <div className="sm:col-span-2">
-                <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">Sizes</label>
+              {/* Category and Brand */}
+              <select
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    category: e.target.value,
+                    subCategory: e.target.value,
+                  })
+                }
+                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm sm:text-base"
+              >
+                <option className="bg-black" value="">Select Category</option>
+                {categories.map((cat) => (
+                  <option className="bg-black" key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={formData.brand}
+                onChange={(e) =>
+                  setFormData({ ...formData, brand: e.target.value })
+                }
+                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm sm:text-base"
+              >
+                <option className="bg-black" value="">Select Brand</option>
+                {brands.map((b) => (
+                  <option className="bg-black" key={b._id} value={b._id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Dimensions */}
+              <div className="lg:col-span-3">
+                <h4 className="text-lg font-semibold mb-3 text-[#FFD770] mt-6">Dimensions & Weight</h4>
+              </div>
+              
+              <input
+                type="number"
+                placeholder="Length"
+                value={formData.length}
+                onChange={(e) => setFormData({ ...formData, length: e.target.value })}
+                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+              />
+              
+              <input
+                type="number"
+                placeholder="Width"
+                value={formData.width}
+                onChange={(e) => setFormData({ ...formData, width: e.target.value })}
+                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+              />
+              
+              <input
+                type="number"
+                placeholder="Height"
+                value={formData.height}
+                onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+              />
+              
+              <select
+                value={formData.dimensionUnit}
+                onChange={(e) => setFormData({ ...formData, dimensionUnit: e.target.value })}
+                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm sm:text-base"
+              >
+                <option className="bg-black" value="cm">CM</option>
+                <option className="bg-black" value="inches">Inches</option>
+              </select>
+              
+              <input
+                type="number"
+                placeholder="Weight (kg)"
+                value={formData.weight}
+                onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+              />
+
+              {/* Furniture Specifications */}
+              <div className="lg:col-span-3">
+                <h4 className="text-lg font-semibold mb-3 text-[#FFD770] mt-6">Furniture Specifications</h4>
+              </div>
+
+              {/* Room Type Selection */}
+              <div className="lg:col-span-3">
+                <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">Room Type</label>
                 <div className="flex flex-wrap gap-2">
-                  {sizeOptions.map((size) => (
+                  {roomTypeOptions.map((room) => (
                     <button
-                      key={size}
+                      key={room}
                       type="button"
-                      onClick={() => handleSizeChange(size)}
+                      onClick={() => handleArrayChange('roomType', room)}
                       className={`px-2 sm:px-3 py-1 rounded border text-xs sm:text-sm transition ${
-                        formData.size.includes(size)
+                        formData.roomType.includes(room)
                           ? 'bg-[#FFD770] text-black border-[#FFD770]'
                           : 'bg-black/30 text-[#FFD770] border-[#FFD770]/40 hover:border-[#FFD770]/80'
                       }`}
                     >
-                      {size}
+                      {room}
                     </button>
                   ))}
                 </div>
                 <div className="mt-2 text-xs sm:text-sm text-[#FFD770]/80">
-                  Selected: {formData.size.length > 0 ? formData.size.join(', ') : 'None'}
+                  Selected: {formData.roomType.length > 0 ? formData.roomType.join(', ') : 'None'}
+                </div>
+              </div>
+
+              {/* Style Selection */}
+              <div className="lg:col-span-3">
+                <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">Style</label>
+                <div className="flex flex-wrap gap-2">
+                  {styleOptions.map((style) => (
+                    <button
+                      key={style}
+                      type="button"
+                      onClick={() => handleArrayChange('style', style)}
+                      className={`px-2 sm:px-3 py-1 rounded border text-xs sm:text-sm transition ${
+                        formData.style.includes(style)
+                          ? 'bg-[#FFD770] text-black border-[#FFD770]'
+                          : 'bg-black/30 text-[#FFD770] border-[#FFD770]/40 hover:border-[#FFD770]/80'
+                      }`}
+                    >
+                      {style}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2 text-xs sm:text-sm text-[#FFD770]/80">
+                  Selected: {formData.style.length > 0 ? formData.style.join(', ') : 'None'}
+                </div>
+              </div>
+
+              {/* Material Selection */}
+              <div className="lg:col-span-3">
+                <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">Materials</label>
+                <div className="flex flex-wrap gap-2">
+                  {materialOptions.map((material) => (
+                    <button
+                      key={material}
+                      type="button"
+                      onClick={() => handleArrayChange('material', material)}
+                      className={`px-2 sm:px-3 py-1 rounded border text-xs sm:text-sm transition ${
+                        formData.material.includes(material)
+                          ? 'bg-[#FFD770] text-black border-[#FFD770]'
+                          : 'bg-black/30 text-[#FFD770] border-[#FFD770]/40 hover:border-[#FFD770]/80'
+                      }`}
+                    >
+                      {material}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2 text-xs sm:text-sm text-[#FFD770]/80">
+                  Selected: {formData.material.length > 0 ? formData.material.join(', ') : 'None'}
                 </div>
               </div>
 
               {/* Color Selection */}
-              <div className="sm:col-span-2">
+              <div className="lg:col-span-3">
                 <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">Colors</label>
                 <div className="flex flex-wrap gap-2">
                   {colorOptions.map((color) => (
                     <button
                       key={color}
                       type="button"
-                      onClick={() => handleColorChange(color)}
+                      onClick={() => handleArrayChange('color', color)}
                       className={`px-2 sm:px-3 py-1 rounded border text-xs sm:text-sm transition ${
                         formData.color.includes(color)
                           ? 'bg-[#FFD770] text-black border-[#FFD770]'
@@ -572,114 +843,206 @@ const AddProduct = () => {
                 </div>
               </div>
 
-              {/* Dropdowns */}
-              {[
-                {
-                  label: "Fit",
-                  value: formData.fit,
-                  options: ["Slim", "Regular", "Oversized", "Relaxed"],
-                  key: "fit",
-                },
-                {
-                  label: "Sleeve Length",
-                  value: formData.sleeveLength,
-                  options: ["Short", "Half", "Long", "Sleeveless"],
-                  key: "sleeveLength",
-                },
-                {
-                  label: "Season",
-                  value: formData.season,
-                  options: ["Summer", "Winter", "Spring", "Fall", "All Season"],
-                  key: "season",
-                },
-                {
-                  label: "Gender",
-                  value: formData.gender,
-                  options: ["Men", "Women", "Unisex", "Kids", "Boys", "Girls"],
-                  key: "gender",
-                },
-              ].map((dropdown) => (
-                <select
-                  key={dropdown.key}
-                  value={dropdown.value}
-                  onChange={(e) =>
-                    setFormData({ ...formData, [dropdown.key]: e.target.value })
-                  }
-                  className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md focus:outline-none text-sm sm:text-base"
-                >
-                  <option className="bg-black" value="">Select {dropdown.label}</option>
-                  {dropdown.options.map((opt) => (
-                    <option className="bg-black" key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              ))}
-
-              {/* Brands */}
+              {/* Finish */}
               <select
-                value={formData.brand}
-                onChange={(e) =>
-                  setFormData({ ...formData, brand: e.target.value })
-                }
+                value={formData.finish}
+                onChange={(e) => setFormData({ ...formData, finish: e.target.value })}
                 className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm sm:text-base"
               >
-                <option className="bg-black"  value="">Select Brand</option>
-                {brands.map((b) => (
-                  <option className="bg-black"  key={b._id} value={b._id}>
-                    {b.name}
+                <option className="bg-black" value="">Select Finish</option>
+                {finishOptions.map((finish) => (
+                  <option className="bg-black" key={finish} value={finish}>
+                    {finish}
                   </option>
                 ))}
               </select>
 
-              {/* Category */}
-              <select
-                value={formData.category}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    category: e.target.value,
-                    subCategory: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm sm:text-base"
-              >
-                <option className="bg-black"  value="">Select Category</option>
-                {categories.map((cat) => (
-                  <option  className="bg-black" key={cat._id} value={cat._id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+              {/* Assembly and Capacity */}
+              <input
+                type="number"
+                placeholder="Assembly Time (minutes)"
+                value={formData.assemblyTime}
+                onChange={(e) => setFormData({ ...formData, assemblyTime: e.target.value })}
+                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+              />
+
+              <input
+                type="number"
+                placeholder="Weight Capacity (kg)"
+                value={formData.weightCapacity}
+                onChange={(e) => setFormData({ ...formData, weightCapacity: e.target.value })}
+                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+              />
             </div>
 
             {/* Description */}
             <textarea
               placeholder="Description"
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="mt-4 w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none h-20 sm:h-24 text-sm sm:text-base"
             />
 
+            {/* Features Section */}
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Product Features</h4>
+              {formData.features.map((feature, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    placeholder="Feature Name (e.g., Seats)"
+                    value={feature.name}
+                    onChange={(e) => handleFeatureChange(index, 'name', e.target.value)}
+                    className="flex-1 px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Value (e.g., 6 People)"
+                    value={feature.value}
+                    onChange={(e) => handleFeatureChange(index, 'value', e.target.value)}
+                    className="flex-1 px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
+                  />
+                  {formData.features.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeFeature(index)}
+                      className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addFeature}
+                className="mt-2 px-4 py-2 bg-[#FFD770] text-black rounded hover:scale-105 transition text-sm"
+              >
+                + Add Feature
+              </button>
+            </div>
+
+            {/* Certifications */}
+            <div className="mt-6">
+              <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">Certifications</label>
+              <div className="flex flex-wrap gap-2">
+                {certificationOptions.map((cert) => (
+                  <button
+                    key={cert}
+                    type="button"
+                    onClick={() => handleArrayChange('certifications', cert)}
+                    className={`px-2 sm:px-3 py-1 rounded border text-xs sm:text-sm transition ${
+                      formData.certifications.includes(cert)
+                        ? 'bg-[#FFD770] text-black border-[#FFD770]'
+                        : 'bg-black/30 text-[#FFD770] border-[#FFD770]/40 hover:border-[#FFD770]/80'
+                    }`}
+                  >
+                    {cert}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-2 text-xs sm:text-sm text-[#FFD770]/80">
+                Selected: {formData.certifications.length > 0 ? formData.certifications.join(', ') : 'None'}
+              </div>
+            </div>
+
+            {/* Shipping Information */}
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Shipping & Delivery</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <input
+                  type="number"
+                  placeholder="Shipping Weight (kg)"
+                  value={formData.shippingWeight}
+                  onChange={(e) => setFormData({ ...formData, shippingWeight: e.target.value })}
+                  className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
+                />
+                
+                <input
+                  type="text"
+                  placeholder="Shipping Class"
+                  value={formData.shippingClass}
+                  onChange={(e) => setFormData({ ...formData, shippingClass: e.target.value })}
+                  className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
+                />
+                
+                <input
+                  type="number"
+                  placeholder="Flat Shipping Rate"
+                  value={formData.flatShippingRate}
+                  onChange={(e) => setFormData({ ...formData, flatShippingRate: e.target.value })}
+                  className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
+                />
+                
+                <input
+                  type="text"
+                  placeholder="Delivery Time (e.g., 7-10 business days)"
+                  value={formData.deliveryTime}
+                  onChange={(e) => setFormData({ ...formData, deliveryTime: e.target.value })}
+                  className="lg:col-span-3 w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Care and Warranty */}
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Care & Warranty</h4>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <textarea
+                  placeholder="Care Instructions"
+                  value={formData.careInstructions}
+                  onChange={(e) => setFormData({ ...formData, careInstructions: e.target.value })}
+                  className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none h-20 text-sm"
+                />
+                
+                <input
+                  type="text"
+                  placeholder="Warranty (e.g., 1 Year Manufacturer Warranty)"
+                  value={formData.warranty}
+                  onChange={(e) => setFormData({ ...formData, warranty: e.target.value })}
+                  className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Additional Information */}
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Additional Information</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  placeholder="Country of Origin"
+                  value={formData.countryOfOrigin}
+                  onChange={(e) => setFormData({ ...formData, countryOfOrigin: e.target.value })}
+                  className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
+                />
+              </div>
+            </div>
+
             {/* Boolean Flags */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
-              {["isFeatured", "isNewArrival", "isBestSeller"].map(
-                (flag) => (
-                  <label key={flag} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={formData[flag]}
-                      onChange={(e) =>
-                        setFormData({ ...formData, [flag]: e.target.checked })
-                      }
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm sm:text-base">{flag}</span>
-                  </label>
-                )
-              )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-6">
+              {[
+                { key: "assemblyRequired", label: "Assembly Required" },
+                { key: "ecoFriendly", label: "Eco Friendly" },
+                { key: "sustainableMaterials", label: "Sustainable Materials" },
+                { key: "handcrafted", label: "Handcrafted" },
+                { key: "freeShipping", label: "Free Shipping" },
+                { key: "isFeatured", label: "Featured" },
+                { key: "isNewArrival", label: "New Arrival" },
+                { key: "isBestSeller", label: "Best Seller" }
+              ].map(({ key, label }) => (
+                <label key={key} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData[key]}
+                    onChange={(e) =>
+                      setFormData({ ...formData, [key]: e.target.checked })
+                    }
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm sm:text-base">{label}</span>
+                </label>
+              ))}
               
               {/* Special handling for isOnSale checkbox */}
               <label className="flex items-center gap-2">
@@ -691,75 +1054,104 @@ const AddProduct = () => {
                     setFormData({ 
                       ...formData, 
                       isOnSale: isChecked,
-                      // Clear dates if unchecking
                       saleStartDate: isChecked ? formData.saleStartDate : "",
                       saleEndDate: isChecked ? formData.saleEndDate : ""
                     });
                   }}
                   className="w-4 h-4"
                 />
-                <span className="text-sm sm:text-base">isOnSale</span>
+                <span className="text-sm sm:text-base">On Sale</span>
               </label>
             </div>
 
-            {/* Sale Date Fields - Show only when isOnSale is true */}
-            {formData.isOnSale && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 p-4 bg-black/20 border border-[#FFD770]/20 rounded-md">
-                <div>
-                  <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">
-                    Sale Start Date *
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.saleStartDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, saleStartDate: e.target.value })
-                    }
-                    className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
-                    required={formData.isOnSale}
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">
-                    Sale End Date *
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.saleEndDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, saleEndDate: e.target.value })
-                    }
-                    className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
-                    required={formData.isOnSale}
-                    min={formData.saleStartDate} // Prevent end date from being before start date
-                  />
-                </div>
-                <div className="sm:col-span-2 text-xs sm:text-sm text-[#FFD770]/60 mt-2">
-                  <p>* Both dates are required when marking product as on sale</p>
-                  <p>Sale end date must be after the start date</p>
-                </div>
-              </div>
-            )}
-
-            {/* Image Upload */}
+            {/* Date Fields */}
             <div className="mt-6">
-              <label className="block font-semibold mb-2 text-sm sm:text-base">Product Images</label>
-              {imageInputs.map((key) => (
+              <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Dates</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold mb-2 text-[#FFD770] text-sm">Release Date</label>
+                  <input
+                    type="date"
+                    value={formData.releaseDate}
+                    onChange={(e) => setFormData({ ...formData, releaseDate: e.target.value })}
+                    className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md focus:outline-none text-sm"
+                  />
+                </div>
+                
+                {formData.isOnSale && (
+                  <>
+                    <div>
+                      <label className="block font-semibold mb-2 text-[#FFD770] text-sm">Sale Start Date *</label>
+                      <input
+                        type="date"
+                        value={formData.saleStartDate}
+                        onChange={(e) => setFormData({ ...formData, saleStartDate: e.target.value })}
+                        className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md focus:outline-none text-sm"
+                        required={formData.isOnSale}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold mb-2 text-[#FFD770] text-sm">Sale End Date *</label>
+                      <input
+                        type="date"
+                        value={formData.saleEndDate}
+                        onChange={(e) => setFormData({ ...formData, saleEndDate: e.target.value })}
+                        className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md focus:outline-none text-sm"
+                        required={formData.isOnSale}
+                        min={formData.saleStartDate}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Media Upload */}
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Media</h4>
+              
+              {/* Product Images */}
+              <div className="mb-4">
+                <label className="block font-semibold mb-2 text-sm sm:text-base">Product Images</label>
+                {imageInputs.map((key) => (
+                  <input
+                    key={key}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleSingleImageChange(e, key)}
+                    className="mb-2 w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm"
+                  />
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddMoreImages}
+                  className="mt-2 px-4 py-2 bg-[#FFD770] text-black rounded hover:scale-105 transition text-sm sm:text-base"
+                >
+                  + Add More Images
+                </button>
+              </div>
+              
+              {/* Video Upload */}
+              <div className="mb-4">
+                <label className="block font-semibold mb-2 text-sm sm:text-base">Product Video (Optional)</label>
                 <input
-                  key={key}
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoChange}
+                  className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm"
+                />
+              </div>
+              
+              {/* Dimension Diagram */}
+              <div className="mb-4">
+                <label className="block font-semibold mb-2 text-sm sm:text-base">Dimension Diagram (Optional)</label>
+                <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => handleSingleImageChange(e, key)}
-                  className="mb-2 w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm"
+                  onChange={handleDimensionDiagramChange}
+                  className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm"
                 />
-              ))}
-              <button
-                type="button"
-                onClick={handleAddMoreImages}
-                className="mt-2 px-4 py-2 bg-[#FFD770] text-black rounded hover:scale-105 transition text-sm sm:text-base"
-              >
-                + Add More Pics
-              </button>
+              </div>
             </div>
 
             {/* Modal Buttons */}
