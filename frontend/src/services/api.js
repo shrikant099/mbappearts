@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 // const BASE_URL = "https://ukf-backend.onrender.com"
+=======
+//const BASE_URL = "https://ukf-backend.onrender.com"
+>>>>>>> Stashed changes
 const BASE_URL = "http://localhost:4000"
 
 // AUTH ENDPOINTS
