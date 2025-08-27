@@ -4,7 +4,7 @@ import { apiConnector } from "../../services/apiConnector";
 import toast from "react-hot-toast";
 import { categoryEndpoints } from "../../services/api";
 import { useSelector, useDispatch } from "react-redux";
-import { updateFilter } from "../../slices/filterSlice";
+import { updateFilter, clearFilters } from "../../slices/filterSlice";
 import { setIsOpen } from "../../slices/productSlice";
 import { ROOM_TYPES, STYLES, MATERIALS } from "../../slices/filterSlice";
 
@@ -63,19 +63,24 @@ const ProductSidebar = () => {
     }
   }, []); // Only run on mount
 
+  const handleCategoryChange = (categoryId) => {
+    dispatch(updateFilter({ 
+      type: "category",
+      value: categoryId,
+      checked: true
+    }));
+  };
+
   const handleCheckboxChange = (type, value, checked) => {
-    if (type === "category") {
-      // For category, we want to set the value directly when checked
-      // and clear it when unchecked
-      dispatch(updateFilter({ 
-        type,
-        value: checked ? value : null,
-        checked: true // Always true for radio buttons
-      }));
-    } else {
-      // For array-based filters (roomType, material, style, etc.)
-      dispatch(updateFilter({ type, value, checked }));
-    }
+    dispatch(updateFilter({ type, value, checked }));
+  };
+
+  const handleBooleanFilterChange = (type, value) => {
+    dispatch(updateFilter({ 
+      type,
+      value,
+      checked: true
+    }));
   };
 
   const handlePriceRangeChange = (type, value) => {
@@ -108,6 +113,11 @@ const ProductSidebar = () => {
     }));
   };
 
+  const handleClearFilters = () => {
+    dispatch(clearFilters());
+    setPriceRange({ min: 0, max: 100000 });
+  };
+
   const formatPrice = (price) => {
     if (price >= 100000) {
       return `₹${(price / 100000).toFixed(1)}L`;
@@ -115,6 +125,19 @@ const ProductSidebar = () => {
       return `₹${(price / 1000).toFixed(0)}k`;
     }
     return `₹${price}`;
+  };
+
+  const activeFilterCount = () => {
+    let count = 0;
+    if (filters.category) count++;
+    count += filters.roomType?.length || 0;
+    count += filters.style?.length || 0;
+    count += filters.material?.length || 0;
+    count += filters.color?.length || 0;
+    if (filters.priceRange?.min > 0 || filters.priceRange?.max < 100000) count++;
+    if (filters.ecoFriendly) count++;
+    if (filters.assemblyRequired !== null) count++;
+    return count;
   };
 
   return (
@@ -129,216 +152,304 @@ const ProductSidebar = () => {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 z-[80] lg:relative hidescroll lg:z-0 h-screen w-64 bg-black text-[#FFD700] transform ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 transition-transform duration-300 ease-in-out overflow-y-auto shadow-lg`}
+        className={`fixed top-0 left-0 z-[80] lg:relative lg:z-0 h-screen w-64 bg-black text-[#FFD700] transform 
+          ${isOpen ? "translate-x-0" : "-translate-x-full"} 
+          lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-lg
+          overflow-hidden`} // Changed from overflow-y-auto to overflow-hidden
       >
-        {/* Close button on mobile */}
-        <div className="lg:hidden flex justify-end p-4 sticky top-0 bg-black">
-          <button
-            onClick={() => dispatch(setIsOpen())}
-            className="text-[#FFD700] hover:text-white cursor-pointer text-xl font-bold bg-transparent rounded-full w-8 h-8 flex items-center justify-center hover:bg-[#FFD700] hover:bg-opacity-20 transition-all"
-          >
-            ×
-          </button>
-        </div>
+        {/* Container for scrollable content */}
+        <div className="h-full flex flex-col">
+          {/* Close button container - stays fixed */}
+          <div className="lg:hidden flex justify-end p-4 sticky top-0 bg-black z-10">
+            <button
+              onClick={() => dispatch(setIsOpen())}
+              className="text-[#FFD700] hover:text-white cursor-pointer text-xl font-bold bg-transparent rounded-full w-8 h-8 flex items-center justify-center hover:bg-[#FFD700] hover:bg-opacity-20 transition-all"
+            >
+              ×
+            </button>
+          </div>
 
-        {/* Navigation & Filters */}
-        <div className="p-4 space-y-6">
-          {/* Categories */}
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Categories</h2>
-            {categories.length > 0 ? (
-              categories.filter((cat) => cat.status === "active").map((cat) => (
-                <label key={cat._id} className="flex items-center mb-1 cursor-pointer">
+          {/* Scrollable content container */}
+          <div className="flex-1 overflow-y-auto hidescroll">
+            <div className="p-4 space-y-6">
+              {/* Filter Header with Clear All */}
+              <div className="flex justify-between items-center">
+                <h1 className="text-xl font-bold">Filters</h1>
+                {activeFilterCount() > 0 && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="text-sm text-red-400 hover:text-red-300 underline transition-colors"
+                  >
+                    Clear All ({activeFilterCount()})
+                  </button>
+                )}
+              </div>
+
+              {/* Categories */}
+              <div>
+                <h2 className="text-lg font-semibold mb-3 border-b border-[#FFD700] pb-1">Categories</h2>
+                <div className="space-y-2">
+                  {/* All Categories Option */}
+                  <label className="flex items-center cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="category"
+                      value=""
+                      checked={!filters.category}
+                      onChange={() => handleCategoryChange(null)}
+                      className="mr-2 cursor-pointer accent-[#FFD700]"
+                    />
+                    <span className="cursor-pointer group-hover:text-yellow-300 transition-colors">
+                      All Categories
+                    </span>
+                  </label>
+                  
+                  {categories.length > 0 ? (
+                    categories.filter((cat) => cat.status === "active").map((cat) => (
+                      <label key={cat._id} className="flex items-center cursor-pointer group">
+                        <input
+                          type="radio"
+                          name="category"
+                          value={cat._id}
+                          checked={filters.category === cat._id}
+                          onChange={() => handleCategoryChange(cat._id)}
+                          className="mr-2 cursor-pointer accent-[#FFD700]"
+                        />
+                        <span className="cursor-pointer group-hover:text-yellow-300 transition-colors">
+                          {cat.name}
+                        </span>
+                      </label>
+                    ))
+                  ) : (
+                    <p className="text-gray-400 text-sm">No categories found</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Price Range */}
+              <div>
+                <h2 className="text-lg font-semibold mb-3 border-b border-[#FFD700] pb-1">Price Range</h2>
+                
+                {/* Price Display */}
+                <div className="flex justify-between items-center mb-3 text-sm">
+                  <span className="bg-[#FFD700] text-black px-2 py-1 rounded font-medium">
+                    {formatPrice(priceRange.min)}
+                  </span>
+                  <span className="text-[#FFD700]">to</span>
+                  <span className="bg-[#FFD700] text-black px-2 py-1 rounded font-medium">
+                    {formatPrice(priceRange.max)}
+                  </span>
+                </div>
+
+                {/* Dual Range Slider Container */}
+                <div className="relative mb-4 py-2">
+                  {/* Track */}
+                  <div className="h-2 bg-gray-700 rounded-lg relative mx-2">
+                    {/* Active range highlight */}
+                    <div 
+                      className="absolute h-2 bg-[#FFD700] rounded-lg"
+                      style={{
+                        left: `${(priceRange.min / MAX_PRICE) * 100}%`,
+                        width: `${((priceRange.max - priceRange.min) / MAX_PRICE) * 100}%`
+                      }}
+                    />
+                  </div>
+
+                  {/* Min Range Slider */}
                   <input
-                    type="radio"
-                    name="category"
-                    value={cat._id}
-                    checked={filters.category === cat._id}
-                    onChange={(e) => handleCheckboxChange("category", cat._id, true)}
-                    className="mr-2 cursor-pointer"
+                    type="range"
+                    min={MIN_PRICE}
+                    max={MAX_PRICE}
+                    step={STEP}
+                    value={priceRange.min}
+                    onChange={(e) => handlePriceRangeChange('min', e.target.value)}
+                    className="absolute top-[-9px] left-0 w-full h-6 appearance-none bg-transparent cursor-grab active:cursor-grabbing slider-thumb"
+                    style={{ 
+                      zIndex: priceRange.min > MAX_PRICE - 10000 ? 2 : 1,
+                      pointerEvents: 'all'
+                    }}
                   />
-                  <span className="cursor-pointer">{cat.name}</span>
-                </label>
-              ))
-            ) : (
-              <p>No categories found</p>
-            )}
-          </div>
 
-          {/* Price Range */}
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Price Range</h2>
-            
-            {/* Price Display */}
-            <div className="flex justify-between items-center mb-3 text-sm">
-              <span className="bg-[#FFD700] text-black px-2 py-1 rounded font-medium">
-                {formatPrice(priceRange.min)}
-              </span>
-              <span className="text-[#FFD700]">to</span>
-              <span className="bg-[#FFD700] text-black px-2 py-1 rounded font-medium">
-                {formatPrice(priceRange.max)}
-              </span>
-            </div>
+                  {/* Max Range Slider */}
+                  <input
+                    type="range"
+                    min={MIN_PRICE}
+                    max={MAX_PRICE}
+                    step={STEP}
+                    value={priceRange.max}
+                    onChange={(e) => handlePriceRangeChange('max', e.target.value)}
+                    className="absolute top-[-9px] left-0 w-full h-6 appearance-none bg-transparent cursor-grab active:cursor-grabbing slider-thumb"
+                    style={{ 
+                      zIndex: priceRange.max < 10000 ? 2 : 1,
+                      pointerEvents: 'all'
+                    }}
+                  />
+                </div>
 
-            {/* Dual Range Slider Container */}
-            <div className="relative mb-4 py-2">
-              {/* Track */}
-              <div className="h-2 bg-gray-700 rounded-lg relative mx-2">
-                {/* Active range highlight */}
-                <div 
-                  className="absolute h-2 bg-[#FFD700] rounded-lg"
-                  style={{
-                    left: `${(priceRange.min / MAX_PRICE) * 100}%`,
-                    width: `${((priceRange.max - priceRange.min) / MAX_PRICE) * 100}%`
-                  }}
-                />
+                {/* Input Fields for Manual Entry */}
+                <div className="flex gap-2 mt-3">
+                  <div className="flex-1">
+                    <label className="block text-xs text-[#FFD700] mb-1">Min</label>
+                    <input
+                      type="number"
+                      min={MIN_PRICE}
+                      max={MAX_PRICE}
+                      step={STEP}
+                      value={priceRange.min}
+                      onChange={(e) => handlePriceRangeChange('min', e.target.value)}
+                      className="w-full px-2 py-1 text-sm bg-gray-800 text-[#FFD700] border border-gray-600 rounded focus:outline-none focus:border-[#FFD700]"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-[#FFD700] mb-1">Max</label>
+                    <input
+                      type="number"
+                      min={MIN_PRICE}
+                      max={MAX_PRICE}
+                      step={STEP}
+                      value={priceRange.max}
+                      onChange={(e) => handlePriceRangeChange('max', e.target.value)}
+                      className="w-full px-2 py-1 text-sm bg-gray-800 text-[#FFD700] border border-gray-600 rounded focus:outline-none focus:border-[#FFD700]"
+                    />
+                  </div>
+                </div>
               </div>
 
-              {/* Min Range Slider */}
-              <input
-                type="range"
-                min={MIN_PRICE}
-                max={MAX_PRICE}
-                step={STEP}
-                value={priceRange.min}
-                onChange={(e) => handlePriceRangeChange('min', e.target.value)}
-                className="absolute top-[-9px] left-0 w-full h-6 appearance-none bg-transparent cursor-grab active:cursor-grabbing slider-thumb"
-                style={{ 
-                  zIndex: priceRange.min > MAX_PRICE - 10000 ? 2 : 1,
-                  pointerEvents: 'all'
-                }}
-              />
-
-              {/* Max Range Slider */}
-              <input
-                type="range"
-                min={MIN_PRICE}
-                max={MAX_PRICE}
-                step={STEP}
-                value={priceRange.max}
-                onChange={(e) => handlePriceRangeChange('max', e.target.value)}
-                className="absolute top-[-9px] left-0 w-full h-6 appearance-none bg-transparent cursor-grab active:cursor-grabbing slider-thumb"
-                style={{ 
-                  zIndex: priceRange.max < 10000 ? 2 : 1,
-                  pointerEvents: 'all'
-                }}
-              />
-            </div>
-
-            {/* Input Fields for Manual Entry */}
-            <div className="flex gap-2 mt-3">
-              <div className="flex-1">
-                <label className="block text-xs text-[#FFD700] mb-1">Min</label>
-                <input
-                  type="number"
-                  min={MIN_PRICE}
-                  max={MAX_PRICE}
-                  step={STEP}
-                  value={priceRange.min}
-                  onChange={(e) => handlePriceRangeChange('min', e.target.value)}
-                  className="w-full px-2 py-1 text-sm bg-gray-800 text-[#FFD700] border border-gray-600 rounded focus:outline-none focus:border-[#FFD700]"
-                />
+              {/* Room Type */}
+              <div>
+                <h2 className="text-lg font-semibold mb-3 border-b border-[#FFD700] pb-1">Room Type</h2>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {ROOM_TYPES.map((room) => (
+                    <label key={room} className="flex items-center cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        value={room}
+                        checked={filters.roomType?.includes(room) || false}
+                        onChange={(e) =>
+                          handleCheckboxChange("roomType", room, e.target.checked)
+                        }
+                        className="mr-2 accent-[#FFD700]"
+                      />
+                      <span className="cursor-pointer group-hover:text-yellow-300 transition-colors text-sm">
+                        {room}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
-              <div className="flex-1">
-                <label className="block text-xs text-[#FFD700] mb-1">Max</label>
-                <input
-                  type="number"
-                  min={MIN_PRICE}
-                  max={MAX_PRICE}
-                  step={STEP}
-                  value={priceRange.max}
-                  onChange={(e) => handlePriceRangeChange('max', e.target.value)}
-                  className="w-full px-2 py-1 text-sm bg-gray-800 text-[#FFD700] border border-gray-600 rounded focus:outline-none focus:border-[#FFD700]"
-                />
+
+              {/* Material */}
+              <div>
+                <h2 className="text-lg font-semibold mb-3 border-b border-[#FFD700] pb-1">Material</h2>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {MATERIALS.map((material) => (
+                    <label key={material} className="flex items-center cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        value={material}
+                        checked={filters.material?.includes(material) || false}
+                        onChange={(e) =>
+                          handleCheckboxChange("material", material, e.target.checked)
+                        }
+                        className="mr-2 accent-[#FFD700]"
+                      />
+                      <span className="cursor-pointer group-hover:text-yellow-300 transition-colors text-sm">
+                        {material}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Style */}
+              <div>
+                <h2 className="text-lg font-semibold mb-3 border-b border-[#FFD700] pb-1">Style</h2>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {STYLES.map((style) => (
+                    <label key={style} className="flex items-center cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        value={style}
+                        checked={filters.style?.includes(style) || false}
+                        onChange={(e) =>
+                          handleCheckboxChange("style", style, e.target.checked)
+                        }
+                        className="mr-2 accent-[#FFD700]"
+                      />
+                      <span className="cursor-pointer group-hover:text-yellow-300 transition-colors text-sm">
+                        {style}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Additional Filters */}
+              <div>
+                <h2 className="text-lg font-semibold mb-3 border-b border-[#FFD700] pb-1">Additional Filters</h2>
+                <div className="space-y-2">
+                  <label className="flex items-center cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={filters.ecoFriendly || false}
+                      onChange={(e) => handleBooleanFilterChange("ecoFriendly", e.target.checked)}
+                      className="mr-2 accent-[#FFD700]"
+                    />
+                    <span className="cursor-pointer group-hover:text-yellow-300 transition-colors text-sm">
+                      Eco-Friendly
+                    </span>
+                  </label>
+
+                  <div className="space-y-1">
+                    <span className="text-sm text-[#FFD700]">Assembly Required:</span>
+                    <div className="flex gap-2">
+                      <label className="flex items-center cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="assemblyRequired"
+                          checked={filters.assemblyRequired === null}
+                          onChange={() => handleBooleanFilterChange("assemblyRequired", null)}
+                          className="mr-1 accent-[#FFD700]"
+                        />
+                        Any
+                      </label>
+                      <label className="flex items-center cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="assemblyRequired"
+                          checked={filters.assemblyRequired === true}
+                          onChange={() => handleBooleanFilterChange("assemblyRequired", true)}
+                          className="mr-1 accent-[#FFD700]"
+                        />
+                        Yes
+                      </label>
+                      <label className="flex items-center cursor-pointer text-xs">
+                        <input
+                          type="radio"
+                          name="assemblyRequired"
+                          checked={filters.assemblyRequired === false}
+                          onChange={() => handleBooleanFilterChange("assemblyRequired", false)}
+                          className="mr-1 accent-[#FFD700]"
+                        />
+                        No
+                      </label>
+                    </div>
+                  </div>
+
+                  <label className="flex items-center cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={filters.freeShipping || false}
+                      onChange={(e) => handleBooleanFilterChange("freeShipping", e.target.checked)}
+                      className="mr-2 accent-[#FFD700]"
+                    />
+                    <span className="cursor-pointer group-hover:text-yellow-300 transition-colors text-sm">
+                      Free Shipping
+                    </span>
+                  </label>
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Room Type */}
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Room Type</h2>
-            {ROOM_TYPES.map((room) => (
-              <label key={room} className="flex items-center mb-1">
-                <input
-                  type="checkbox"
-                  value={room}
-                  checked={filters.roomType?.includes(room) || false}
-                  onChange={(e) =>
-                    handleCheckboxChange("roomType", room, e.target.checked)
-                  }
-                  className="mr-2"
-                />
-                {room}
-              </label>
-            ))}
-          </div>
-
-          {/* Material */}
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Material</h2>
-            {MATERIALS.map((material) => (
-              <label key={material} className="flex items-center mb-1">
-                <input
-                  type="checkbox"
-                  value={material}
-                  checked={filters.material?.includes(material) || false}
-                  onChange={(e) =>
-                    handleCheckboxChange("material", material, e.target.checked)
-                  }
-                  className="mr-2"
-                />
-                {material}
-              </label>
-            ))}
-          </div>
-
-          {/* Style */}
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Style</h2>
-            {STYLES.map((style) => (
-              <label key={style} className="flex items-center mb-1">
-                <input
-                  type="checkbox"
-                  value={style}
-                  checked={filters.style?.includes(style) || false}
-                  onChange={(e) =>
-                    handleCheckboxChange("style", style, e.target.checked)
-                  }
-                  className="mr-2"
-                />
-                {style}
-              </label>
-            ))}
-          </div>
-
-          {/* Additional Filters */}
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Additional Filters</h2>
-            <label className="flex items-center mb-1">
-              <input
-                type="checkbox"
-                checked={filters.ecoFriendly || false}
-                onChange={(e) =>
-                  handleCheckboxChange("ecoFriendly", e.target.checked, e.target.checked)
-                }
-                className="mr-2"
-              />
-              Eco-Friendly
-            </label>
-            <label className="flex items-center mb-1">
-              <input
-                type="checkbox"
-                checked={filters.assemblyRequired || false}
-                onChange={(e) =>
-                  handleCheckboxChange("assemblyRequired", e.target.checked, e.target.checked)
-                }
-                className="mr-2"
-              />
-              Assembly Required
-            </label>
-            
           </div>
         </div>
       </div>
@@ -441,6 +552,24 @@ const ProductSidebar = () => {
           .slider-thumb::-moz-range-thumb {
             height: 24px;
             width: 24px;
+          }
+        }
+
+        /* Hide scrollbar but keep functionality */
+        .hidescroll {
+          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none; /* IE/Edge */
+        }
+        
+        .hidescroll::-webkit-scrollbar {
+          display: none; /* Chrome/Safari/Opera */
+        }
+        
+        /* Ensure proper height on mobile */
+        @media (max-width: 1024px) {
+          .h-screen {
+            height: 100vh;
+            height: -webkit-fill-available;
           }
         }
       `}</style>

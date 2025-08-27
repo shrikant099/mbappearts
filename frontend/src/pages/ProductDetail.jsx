@@ -23,9 +23,12 @@ export default function ProductDetail() {
   const [imageLoading, setImageLoading] = useState(true);
   const [animateButtons, setAnimateButtons] = useState(false);
 
-  // Remove unused states
-  const [selectedSize, setSelectedSize] = useState("");
+  // Product selection states - changed from arrays to single values
   const [selectedColor, setSelectedColor] = useState("");
+  const [selectedMaterial, setSelectedMaterial] = useState("");
+  const [selectedStyle, setSelectedStyle] = useState("");
+  const [selectedRoomType, setSelectedRoomType] = useState("");
+  const [selectedSize, setSelectedSize] = useState(""); // Add size selection if needed
 
   // Add new states for furniture specific features
   const [selectedVariant, setSelectedVariant] = useState(null);
@@ -56,6 +59,27 @@ export default function ProductDetail() {
       return;
     }
 
+    // Validate required selections
+    if (product.color && product.color.length > 1 && !selectedColor) {
+      toast.error("Please select a color");
+      return;
+    }
+
+    if (product.material && product.material.length > 1 && !selectedMaterial) {
+      toast.error("Please select a material");
+      return;
+    }
+
+    if (product.style && product.style.length > 1 && !selectedStyle) {
+      toast.error("Please select a style");
+      return;
+    }
+
+    if (product.roomType && product.roomType.length > 1 && !selectedRoomType) {
+      toast.error("Please select a room type");
+      return;
+    }
+
     // Validate variant selection if variants exist
     if (product.variants && product.variants.length > 0 && !selectedVariant) {
       toast.error("Please select a variant");
@@ -65,6 +89,11 @@ export default function ProductDetail() {
     // Create product object with selected options
     const productToOrder = {
       ...product,
+      selectedColor: selectedColor || (product.color && product.color[0]) || "",
+      selectedMaterial: selectedMaterial || (product.material && product.material[0]) || "",
+      selectedStyle: selectedStyle || (product.style && product.style[0]) || "",
+      selectedRoomType: selectedRoomType || (product.roomType && product.roomType[0]) || "",
+      selectedSize: selectedSize || "Standard", // Default size if not specified
       selectedVariant,
       price: selectedVariant ? selectedVariant.price : product.price,
     };
@@ -84,11 +113,27 @@ export default function ProductDetail() {
       return;
     }
 
+    // Validate required selections
+    if (product.color && product.color.length > 1 && !selectedColor) {
+      toast.error("Please select a color");
+      return;
+    }
+
+    if (product.material && product.material.length > 1 && !selectedMaterial) {
+      toast.error("Please select a material");
+      return;
+    }
+
     try {
       setIsAddingToCart(true);
       
       const productToAdd = {
         ...product,
+        selectedColor: selectedColor || (product.color && product.color[0]) || "",
+        selectedMaterial: selectedMaterial || (product.material && product.material[0]) || "",
+        selectedStyle: selectedStyle || (product.style && product.style[0]) || "",
+        selectedRoomType: selectedRoomType || (product.roomType && product.roomType[0]) || "",
+        selectedSize: selectedSize || "Standard",
         selectedVariant,
         price: selectedVariant ? selectedVariant.price : product.price,
       };
@@ -263,9 +308,25 @@ export default function ProductDetail() {
       setImageLoading(false);
     }
     
+    // Set default selections if there's only one option
+    if (product) {
+      if (product.color && product.color.length === 1) {
+        setSelectedColor(product.color[0]);
+      }
+      if (product.material && product.material.length === 1) {
+        setSelectedMaterial(product.material[0]);
+      }
+      if (product.style && product.style.length === 1) {
+        setSelectedStyle(product.style[0]);
+      }
+      if (product.roomType && product.roomType.length === 1) {
+        setSelectedRoomType(product.roomType[0]);
+      }
+    }
+    
     setTimeout(() => setIsVisible(true), 100);
     setTimeout(() => setAnimateButtons(true), 800);
-  }, [images]);
+  }, [images, product]);
 
   useEffect(() => {
     if (product?._id) {
@@ -277,9 +338,6 @@ export default function ProductDetail() {
   const detailItems = [
     { label: "Brand", value: product?.brand?.name || "N/A" },
     { label: "Category", value: product?.category?.name || "Uncategorized" },
-    { label: "Room Type", value: product?.roomType?.join(", ") || "—" },
-    { label: "Style", value: product?.style?.join(", ") || "—" },
-    { label: "Material", value: product?.material?.join(", ") || "—" },
     { label: "Assembly Required", value: product?.assemblyRequired ? "Yes" : "No" },
     { label: "Assembly Time", value: product?.assemblyTime ? `${product.assemblyTime} minutes` : "—" },
     { label: "Weight Capacity", value: product?.weightCapacity ? `${product.weightCapacity} kg` : "—" },
@@ -338,9 +396,97 @@ export default function ProductDetail() {
             ))}
           </div>
 
-          {/* Replace Size/Color selection with Variants */}
-          {product?.variants && product.variants.length > 0 && (
+          {/* Color Selection */}
+          {product?.color && product.color.length > 1 && (
             <div className={`transition-all duration-600 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+              <h3 className="text-lg font-semibold mb-3 text-[#ecba49]">Select Color:</h3>
+              <div className="flex flex-wrap gap-3">
+                {product.color.map((color, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedColor(color)}
+                    className={`px-4 py-2 border-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 ${
+                      selectedColor === color
+                        ? "border-[#ecba49] bg-[#ecba49] text-black shadow-lg scale-105"
+                        : "border-[#ecba49]/50 text-[#ecba49] hover:border-[#ecba49] hover:bg-[#ecba49]/10"
+                    }`}
+                  >
+                    {color}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Material Selection */}
+          {product?.material && product.material.length > 1 && (
+            <div className={`transition-all duration-600 delay-600 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+              <h3 className="text-lg font-semibold mb-3 text-[#ecba49]">Select Material:</h3>
+              <div className="flex flex-wrap gap-3">
+                {product.material.map((material, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedMaterial(material)}
+                    className={`px-4 py-2 border-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 ${
+                      selectedMaterial === material
+                        ? "border-[#ecba49] bg-[#ecba49] text-black shadow-lg scale-105"
+                        : "border-[#ecba49]/50 text-[#ecba49] hover:border-[#ecba49] hover:bg-[#ecba49]/10"
+                    }`}
+                  >
+                    {material}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Style Selection */}
+          {product?.style && product.style.length > 1 && (
+            <div className={`transition-all duration-600 delay-700 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+              <h3 className="text-lg font-semibold mb-3 text-[#ecba49]">Select Style:</h3>
+              <div className="flex flex-wrap gap-3">
+                {product.style.map((style, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedStyle(style)}
+                    className={`px-4 py-2 border-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 ${
+                      selectedStyle === style
+                        ? "border-[#ecba49] bg-[#ecba49] text-black shadow-lg scale-105"
+                        : "border-[#ecba49]/50 text-[#ecba49] hover:border-[#ecba49] hover:bg-[#ecba49]/10"
+                    }`}
+                  >
+                    {style}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Room Type Selection */}
+          {product?.roomType && product.roomType.length > 1 && (
+            <div className={`transition-all duration-600 delay-800 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+              <h3 className="text-lg font-semibold mb-3 text-[#ecba49]">Select Room Type:</h3>
+              <div className="flex flex-wrap gap-3">
+                {product.roomType.map((room, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedRoomType(room)}
+                    className={`px-4 py-2 border-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 ${
+                      selectedRoomType === room
+                        ? "border-[#ecba49] bg-[#ecba49] text-black shadow-lg scale-105"
+                        : "border-[#ecba49]/50 text-[#ecba49] hover:border-[#ecba49] hover:bg-[#ecba49]/10"
+                    }`}
+                  >
+                    {room}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Variants Section */}
+          {product?.variants && product.variants.length > 0 && (
+            <div className={`transition-all duration-600 delay-900 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
               <h3 className="text-lg font-semibold mb-3 text-[#ecba49]">Select Variant:</h3>
               <div className="flex flex-wrap gap-3">
                 {product.variants.map((variant, idx) => (
@@ -363,7 +509,7 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Add Dimensions Section */}
+          {/* Dimensions Section */}
           <div className="mt-4 p-4 bg-[#1a1a1a] rounded-lg">
             <h3 className="text-lg font-semibold mb-3">Dimensions</h3>
             <div className="grid grid-cols-3 gap-4 text-sm">
@@ -382,7 +528,7 @@ export default function ProductDetail() {
             </div>
           </div>
 
-          {/* Add Sustainability Info */}
+          {/* Sustainability Info */}
           {(product?.ecoFriendly || product?.sustainableMaterials) && (
             <div className="mt-4 p-4 bg-green-900/20 rounded-lg">
               <h3 className="text-lg font-semibold mb-3 text-green-500">Sustainability</h3>
@@ -444,17 +590,30 @@ export default function ProductDetail() {
             <div className="flex gap-2 items-baseline">
               <span className="text-red-500 text-lg font-bold animate-pulse">-{Math.round(((product?.comparePrice - product?.price)/product?.comparePrice)*100)}%</span>
               <span className="text-2xl font-bold hover:text-yellow-300 transition-colors duration-300">
-                ₹{product?.price}
+                ₹{selectedVariant ? selectedVariant.price : product?.price}
               </span>
             </div>
             <div className="text-gray-400 line-through hover:text-gray-300 transition-colors duration-300">
-              M.R.P.: ₹{product?.comparePrice || Math.round(product?.price * 1.25)}
+              M.R.P.: ₹{product?.comparePrice || Math.round((selectedVariant ? selectedVariant.price : product?.price) * 1.25)}
             </div>
             <div className="text-sm text-gray-400">Inclusive of all taxes</div>
           </div>
 
+          {/* Selected Options Display */}
+          {(selectedColor || selectedMaterial || selectedStyle || selectedRoomType) && (
+            <div className={`bg-[#1a1a1a] p-4 rounded-lg transition-all duration-600 delay-600 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+              <h3 className="text-lg font-semibold mb-2 text-[#ecba49]">Selected Options:</h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {selectedColor && <div><strong>Color:</strong> {selectedColor}</div>}
+                {selectedMaterial && <div><strong>Material:</strong> {selectedMaterial}</div>}
+                {selectedStyle && <div><strong>Style:</strong> {selectedStyle}</div>}
+                {selectedRoomType && <div><strong>Room:</strong> {selectedRoomType}</div>}
+              </div>
+            </div>
+          )}
+
           {/* Coupon Checkbox */}
-          <div className={`flex items-center gap-2 transition-all duration-600 delay-600 hover:scale-105 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+          <div className={`flex items-center gap-2 transition-all duration-600 delay-700 hover:scale-105 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
             <input type="checkbox" id="coupon" className="accent-[#ecba49] transition-transform duration-300 hover:scale-110" />
             <label htmlFor="coupon" className="text-sm cursor-pointer hover:text-yellow-300 transition-colors duration-300">
               Apply 3% coupon
@@ -462,7 +621,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Offers Section */}
-          <div className={`bg-[#1a1a1a] p-4 rounded-lg space-y-2 text-sm border border-transparent hover:border-[#ecba49]/30 transition-all duration-600 delay-700 hover:shadow-lg ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+          <div className={`bg-[#1a1a1a] p-4 rounded-lg space-y-2 text-sm border border-transparent hover:border-[#ecba49]/30 transition-all duration-600 delay-800 hover:shadow-lg ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
             {offers.map((offer, idx) => (
               <div 
                 key={idx}
@@ -476,14 +635,14 @@ export default function ProductDetail() {
           </div>
 
           {/* Stock Status */}
-          <div className={`font-semibold transition-all duration-600 delay-800 hover:scale-105 ${
+          <div className={`font-semibold transition-all duration-600 delay-900 hover:scale-105 ${
             product?.stock > 0 ? "text-green-500" : "text-red-500"
           } ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
             {product?.stock > 0 ? "✓ In stock" : "✗ Out of stock"}
           </div>
 
           {/* Shipping Info */}
-          <div className={`space-y-1 text-sm text-gray-400 transition-all duration-600 delay-900 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+          <div className={`space-y-1 text-sm text-gray-400 transition-all duration-600 delay-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
             <p className="hover:text-gray-300 transition-colors duration-300">
               Ships from UKF • Sold by RK World Infocom Pvt Ltd
             </p>
@@ -493,7 +652,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Product Details Grid */}
-          <div className={`grid grid-cols-2 gap-3 mt-4 text-sm transition-all duration-600 delay-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+          <div className={`grid grid-cols-2 gap-3 mt-4 text-sm transition-all duration-600 delay-1100 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
             {detailItems.map((item, idx) => (
               <div 
                 key={idx}
@@ -592,7 +751,7 @@ export default function ProductDetail() {
 
       {/* Review Modal */}
       {showReviewModal && (
-        <div className="fixed inset-0  bg-opacity-80 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex justify-center items-center z-50 p-4">
           <div className="bg-[#1a1a1a] rounded-lg w-full max-w-md p-6 border border-[#ecba49]/30">
             <h3 className="text-xl font-bold text-[#ecba49] mb-4">
               {existingReview ? "Update Your Review" : "Write a Review"}

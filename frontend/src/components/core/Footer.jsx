@@ -15,10 +15,15 @@ import {
 } from "react-icons/fa";
 import logo from "../../assets/images/LOGO.jpg"
 import { FaSquareInstagram } from "react-icons/fa6";
+import { useDispatch } from 'react-redux';
+import { clearFilters, updateFilter } from '../../slices/filterSlice';
+import { useNavigate } from 'react-router-dom';
 
 export default function Footer() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [hoveredSocial, setHoveredSocial] = useState(null);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   // Handle scroll to top button visibility
   useEffect(() => {
@@ -83,11 +88,66 @@ export default function Footer() {
   ];
 
   const categoryLinks = [
-    { name: 'Living Room', href: '/living-room' },
-    { name: 'Bedroom', href: '/bedroom' },
-    { name: 'Dining Room', href: '/dining-room' },
-    { name: 'Office Furniture', href: '/office' },
-    { name: 'Storage Solutions', href: '/storage' }
+    { 
+      name: 'Living Room', 
+      onClick: () => {
+        dispatch(clearFilters());
+        dispatch(updateFilter({
+          type: "roomType",
+          value: "Living Room",
+          checked: true
+        }));
+        navigate('/products');
+      }
+    },
+    { 
+      name: 'Bedroom',
+      onClick: () => {
+        dispatch(clearFilters());
+        dispatch(updateFilter({
+          type: "roomType",
+          value: "Bedroom",
+          checked: true
+        }));
+        navigate('/products');
+      }
+    },
+    { 
+      name: 'Dining Room',
+      onClick: () => {
+        dispatch(clearFilters());
+        dispatch(updateFilter({
+          type: "roomType",
+          value: "Dining Room",
+          checked: true
+        }));
+        navigate('/products');
+      }
+    },
+    { 
+      name: 'Office Furniture',
+      onClick: () => {
+        dispatch(clearFilters());
+        dispatch(updateFilter({
+          type: "roomType",
+          value: "Office",
+          checked: true
+        }));
+        navigate('/products');
+      }
+    },
+    { 
+      name: 'Storage Solutions',
+      onClick: () => {
+        dispatch(clearFilters());
+        dispatch(updateFilter({
+          type: "material",
+          value: "Wood",
+          checked: true
+        }));
+        navigate('/products');
+      }
+    }
   ];
 
   return (
@@ -186,16 +246,16 @@ export default function Footer() {
                 </h3>
                 <nav className="space-y-3">
                   {categoryLinks.map((link, index) => (
-                    <a
+                    <button
                       key={index}
-                      href={link.href}
-                      className="block text-gray-300 hover:text-[#FFD700] transition-all duration-300 transform hover:translate-x-2 hover:scale-105 py-1 px-2 rounded-lg hover:bg-[#FFD700]/5 group"
+                      onClick={link.onClick}
+                      className="w-full text-left block text-gray-300 hover:text-[#FFD700] transition-all duration-300 transform hover:translate-x-2 hover:scale-105 py-1 px-2 rounded-lg hover:bg-[#FFD700]/5 group"
                     >
                       <span className="relative">
                         {link.name}
                         <span className="absolute -right-4 opacity-0 group-hover:opacity-100 transition-all duration-300">→</span>
                       </span>
-                    </a>
+                    </button>
                   ))}
                 </nav>
               </div>

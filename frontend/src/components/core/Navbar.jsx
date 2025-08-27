@@ -148,7 +148,7 @@ const Navbar = () => {
                   // Then apply the new category filter for living room
                   dispatch(
                     updateFilter({
-                      type: "categories",
+                      type: "roomType",
                       value: "Living Room",
                       checked: true,
                     })
@@ -173,7 +173,7 @@ const Navbar = () => {
                   // Then apply the new category filter for bedroom
                   dispatch(
                     updateFilter({
-                      type: "categories",
+                      type: "roomType",
                       value: "Bedroom",
                       checked: true,
                     })
@@ -198,7 +198,7 @@ const Navbar = () => {
                   // Then apply the new category filter for dining room
                   dispatch(
                     updateFilter({
-                      type: "categories",
+                      type: "roomType",
                       value: "Dining Room",
                       checked: true,
                     })
@@ -222,7 +222,7 @@ const Navbar = () => {
                   // Then apply filters for office furniture
                   dispatch(
                     updateFilter({
-                      type: "categories",
+                      type: "roomType",
                       value: "Office",
                       checked: true,
                     })
@@ -306,15 +306,16 @@ const Navbar = () => {
                         <div className="w-[40vw] lg:w-[20vw] flex flex-col items-center ">
                           <Link
                             to="/products"
-                            onClick={() =>
-                              dispatch(
-                                updateFilter({
-                                  type: "categories",
-                                  value: "Living Room",
-                                  checked: true,
-                                })
-                              )
-                            }
+                            onClick={() => {
+                              dispatch(clearFilters());
+                              dispatch(setSearchData(''));
+                              dispatch(updateFilter({
+                                type: "roomType",
+                                value: "Living Room",
+                                checked: true
+                              }));
+                              setShowSearch(false);
+                            }}
                           >
                             <img
                               src={livingroomFurniture}
@@ -328,15 +329,16 @@ const Navbar = () => {
                         <div className="w-[40vw] lg:w-[20vw] flex flex-col items-center ">
                           <Link
                             to="/products"
-                            onClick={() =>
-                              dispatch(
-                                updateFilter({
-                                  type: "categories",
-                                  value: "Bedroom",
-                                  checked: true,
-                                })
-                              )
-                            }
+                            onClick={() => {
+                              dispatch(clearFilters());
+                              dispatch(setSearchData(''));
+                              dispatch(updateFilter({
+                                type: "roomType",
+                                value: "Bedroom",
+                                checked: true
+                              }));
+                              setShowSearch(false);
+                            }}
                           >
                             <img
                               src={bedroomFurniture}
@@ -352,15 +354,16 @@ const Navbar = () => {
                         <div className="w-[40vw] lg:w-[20vw] flex flex-col items-center ">
                           <Link
                             to="/products"
-                            onClick={() =>
-                              dispatch(
-                                updateFilter({
-                                  type: "categories",
-                                  value: "Dining Room",
-                                  checked: true,
-                                })
-                              )
-                            }
+                            onClick={() => {
+                              dispatch(clearFilters());
+                              dispatch(setSearchData(''));
+                              dispatch(updateFilter({
+                                type: "roomType",
+                                value: "Dining Room",
+                                checked: true
+                              }));
+                              setShowSearch(false);
+                            }}
                           >
                             <img
                               src={diningroomFurniture}
@@ -374,15 +377,16 @@ const Navbar = () => {
                         <div className="w-[40vw] lg:w-[20vw] flex flex-col items-center ">
                           <Link
                             to="/products"
-                            onClick={() =>
-                              dispatch(
-                                updateFilter({
-                                  type: "categories",
-                                  value: "Office",
-                                  checked: true,
-                                })
-                              )
-                            }
+                            onClick={() => {
+                              dispatch(clearFilters());
+                              dispatch(setSearchData(''));
+                              dispatch(updateFilter({
+                                type: "roomType",
+                                value: "Office",
+                                checked: true
+                              }));
+                              setShowSearch(false);
+                            }}
                           >
                             <img
                               src={officeFurniture}
@@ -458,11 +462,57 @@ const Navbar = () => {
 
       <div className="hidden opacity-0 lg:flex lg:opacity-100 h-[7vh] w-[100vw] bg-[#FFD700] text-black justify-center z-[49]">
         <ul className="flex items-center gap-5 font-medium">
-          <li onClick={() => navigate('/newarrival')} className="hover:scale-105 cursor-pointer">New Arrivals</li>
-          <li onClick={() => navigate('/products')} className="hover:scale-105 cursor-pointer">All Furniture</li>
-          <li onClick={() => navigate('/featuredproducts')} className="hover:scale-105 cursor-pointer">Featured Products</li>
-         
-          <li onClick={() => navigate('/onsale')} className="text-red-600 hover:scale-105 cursor-pointer font-bold">Sale</li>
+          <li 
+            onClick={() => {
+              dispatch(clearFilters());
+              dispatch(updateFilter({
+                type: "isNewArrival",
+                value: true,
+                checked: true
+              }));
+              navigate('/products');
+            }} 
+            className="hover:scale-105 cursor-pointer"
+          >
+            New Arrivals
+          </li>
+          <li 
+            onClick={() => {
+              dispatch(clearFilters());
+              navigate('/products');
+            }} 
+            className="hover:scale-105 cursor-pointer"
+          >
+            All Furniture
+          </li>
+          <li 
+            onClick={() => {
+              dispatch(clearFilters());
+              dispatch(updateFilter({
+                type: "isFeatured",
+                value: true,
+                checked: true
+              }));
+              navigate('/products');
+            }} 
+            className="hover:scale-105 cursor-pointer"
+          >
+            Featured Products
+          </li>
+          <li 
+            onClick={() => {
+              dispatch(clearFilters());
+              dispatch(updateFilter({
+                type: "isOnSale",
+                value: true,
+                checked: true
+              }));
+              navigate('/products');
+            }} 
+            className="text-red-600 hover:scale-105 cursor-pointer font-bold"
+          >
+            Sale
+          </li>
         </ul>
       </div>
     </div>

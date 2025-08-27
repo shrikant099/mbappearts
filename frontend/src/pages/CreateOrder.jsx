@@ -224,38 +224,43 @@ const CreateOrder = () => {
     return { subtotal: 0, shippingFee: 0, tax: 0, discount: 0, total: 0 };
   };
 
-  // Prepare order items - FIXED: Match backend requirements
+  // UPDATED: Prepare order items to match Order model structure
   const prepareOrderItems = () => {
     if (isFromCart && cartItems.length > 0) {
-      return cartItems.map(item => ({
-        productId: item._id,
-        quantity: item.quantity || 1,
-        price: item.selectedVariant?.price || item.price,
-        name: item.name,
-        image: item.images?.[0]?.url,
-        variant: item.selectedVariant ? {
-          material: item.selectedVariant.material,
-          finish: item.selectedVariant.finish
-        } : null,
-        material: item.material?.[0],
-        color: item.color?.[0]
-      }));
+      return cartItems.map(item => {
+        // Validate required fields
+        if (!item._id || !item.name || !item.price) {
+          console.error('Missing required fields for item:', item);
+          return null;
+        }
+
+        return {
+          productId: item._id, // Changed from product to productId
+          quantity: item.quantity || 1,
+          name: item.name,
+          price: item.selectedVariant?.price || item.price,
+          size: item.selectedSize || "Standard",
+          color: item.selectedColor || item.color?.[0] || "Default",
+          image: item.images?.[0]?.url || ''
+        };
+      }).filter(Boolean); // Remove any null items
     } else if (product) {
+      // Validate single product
+      if (!product._id || !product.name || !product.price) {
+        console.error('Missing required fields for product:', product);
+        return [];
+      }
+
       return [{
-        productId: product._id,
+        productId: product._id, // Changed from product to productId
         quantity: 1,
-        price: product.selectedVariant?.price || product.price,
         name: product.name,
-        image: product.images?.[0]?.url,
-        variant: product.selectedVariant ? {
-          material: product.selectedVariant.material,
-          finish: product.selectedVariant.finish
-        } : null,
-        material: product.material?.[0],
-        color: product.color?.[0]
+        price: product.selectedVariant?.price || product.price,
+        size: product.selectedSize || "Standard",
+        color: product.selectedColor || product.color?.[0] || "Default",
+        image: product.images?.[0]?.url || ''
       }];
     }
-    
     return [];
   };
 
@@ -265,13 +270,16 @@ const CreateOrder = () => {
       return;
     }
 
+    if (!userId) {
+      toast.error("Please log in to place order");
+      return;
+    }
+
     const orderItems = prepareOrderItems();
     if (orderItems.length === 0) {
       toast.error("No items to order");
       return;
     }
-
-   
 
     if (isProcessing) {
       return; // Prevent multiple submissions
@@ -280,32 +288,40 @@ const CreateOrder = () => {
     setIsProcessing(true);
     const { subtotal, shippingFee, tax, discount, total } = calculateOrderTotals();
 
+    // Create base order payload matching the Order model requirements
     const baseOrderPayload = {
-      userId,
-      items: orderItems,
-      shippingAddress: selectedAddress,
+      userId: userId, // Changed from user to userId
+      items: orderItems.map(item => ({
+        productId: item.productId, // Changed from product to productId
+        quantity: item.quantity,
+        name: item.name,
+        price: item.price,
+        size: item.size || "Standard",
+        color: item.color || "Default",
+        image: item.image
+      })),
+      shippingAddress: selectedAddress, // Required field
       billingAddress: selectedAddress,
-      paymentMethod,
+      paymentMethod: paymentMethod, // Required field
       subtotal,
       shippingFee,
       tax,
-      discount,
       total,
-      notes,
-      isFromCart,
+      notes: notes || "",
+      currentStatus: 'Order Placed',
+      paymentStatus: 'Pending'
     };
-
-     console.log("order payload is : ",baseOrderPayload)
 
     if (paymentMethod === "COD") {
       try {
-        const res = await apiConnector("POST", orderEndpoints.createOrder, {
-          ...baseOrderPayload,
-          currentStatus: "Order Placed",
-          paymentStatus: "Pending",
-        }, {
-          Authorization: `Bearer ${token}`
-        });
+        const res = await apiConnector(
+          "POST",
+          orderEndpoints.createOrder,
+          baseOrderPayload,
+          {
+            Authorization: `Bearer ${token}`
+          }
+        );
 
         if (res.data.success) {
           handleOrderSuccess();
@@ -315,6 +331,8 @@ const CreateOrder = () => {
       } catch (err) {
         console.error("COD order error:", err);
         toast.error(err.response?.data?.message || "Order placement failed");
+      } finally {
+        setIsProcessing(false);
       }
     } else {
       try {
@@ -460,6 +478,14 @@ const CreateOrder = () => {
     
   }, [userId, product, cartItems, location]);
 
+  // Check user login status
+  useEffect(() => {
+    if (!userId) {
+      toast.error("Please log in to place order");
+      navigate("/login");
+    }
+  }, [userId, navigate]);
+
   // Get items to display
   const itemsToDisplay = isFromCart ? cartItems : (product ? [product] : []);
   const { subtotal, shippingFee, tax, total } = calculateOrderTotals();
@@ -501,11 +527,29 @@ const CreateOrder = () => {
               />
               <div className="flex-1">
                 <h3 className="font-semibold">{item?.name}</h3>
-                {item?.selectedVariant && (
-                  <p className="text-sm text-gray-400">
-                    {item.selectedVariant.material} - {item.selectedVariant.finish}
-                  </p>
-                )}
+                
+                {/* Show selected options */}
+                <div className="text-sm text-gray-400 space-y-1">
+                  {item?.selectedColor && (
+                    <p>Color: {item.selectedColor}</p>
+                  )}
+                  {item?.selectedMaterial && (
+                    <p>Material: {item.selectedMaterial}</p>
+                  )}
+                  {item?.selectedStyle && (
+                    <p>Style: {item.selectedStyle}</p>
+                  )}
+                  {item?.selectedRoomType && (
+                    <p>Room: {item.selectedRoomType}</p>
+                  )}
+                  {item?.selectedSize && (
+                    <p>Size: {item.selectedSize}</p>
+                  )}
+                  {item?.selectedVariant && (
+                    <p>Variant: {item.selectedVariant.material} - {item.selectedVariant.finish}</p>
+                  )}
+                </div>
+                
                 <p className="text-sm text-gray-400">
                   Price: ₹{item?.selectedVariant?.price || item?.price}
                   {isFromCart && ` × ${item?.quantity || 1}`}
@@ -530,7 +574,7 @@ const CreateOrder = () => {
               <span>₹{shippingFee}</span>
             </div>
             <div className="flex justify-between">
-              <span>Tax (5%):</span>
+              <span>Tax (18%):</span>
               <span>₹{tax}</span>
             </div>
             <div className="flex justify-between text-lg font-bold border-t border-gray-700 pt-2">

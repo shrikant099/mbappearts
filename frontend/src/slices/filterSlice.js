@@ -2,8 +2,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  // Category filter
-  category: null,
+  // Category filter - single selection
+  category: null, // Store category ID
   subCategory: null,
   
   // Room type filter - matches Product model enum
@@ -132,26 +132,52 @@ export const filterSlice = createSlice({
         return;
       }
       
+      // Handle category filter - single selection (radio button behavior)
+      if (type === "category") {
+        // If the same category is selected again, deselect it
+        if (state.category === value) {
+          state.category = null;
+        } else {
+          state.category = value;
+        }
+        // Clear subcategory when main category changes
+        state.subCategory = null;
+        return;
+      }
+      
+      // Handle subcategory filter
+      if (type === "subCategory") {
+        state.subCategory = state.subCategory === value ? null : value;
+        return;
+      }
+      
+      // Handle brand filter
+      if (type === "brand") {
+        state.brand = state.brand === value ? null : value;
+        return;
+      }
+      
       // Handle boolean filters
       if (type === "isFeatured" || type === "isNewArrival" || type === "isBestSeller" || 
-          type === "isOnSale" || type === "ecoFriendly" || type === "inStock") {
+          type === "isOnSale" || type === "ecoFriendly" || type === "inStock" || 
+          type === "sustainableMaterials") {
         state[type] = value;
         return;
       }
       
       // Handle assembly filter (can be true, false, or null)
-      if (type === "assemblyRequired") {
+      if (type === "assemblyRequired" || type === "freeShipping") {
         state[type] = value;
         return;
       }
       
       // Handle single value filters
-      if (type === "minRating" || type === "sortBy" || type === "searchQuery") {
+      if (type === "minRating" || type === "sortBy" || type === "searchQuery" || type === "status") {
         state[type] = value;
         return;
       }
       
-      // Handle array filters (categories, roomType, style, material, color, etc.)
+      // Handle array filters (roomType, style, material, color, etc.)
       if (Array.isArray(state[type])) {
         if (checked) {
           // Add value if not already present
@@ -201,6 +227,19 @@ export const filterSlice = createSlice({
     toggleFilter: (state, action) => {
       const { type, value } = action.payload;
       
+      // Handle category toggle
+      if (type === "category") {
+        state.category = state.category === value ? null : value;
+        state.subCategory = null; // Clear subcategory when category changes
+        return;
+      }
+      
+      // Handle brand toggle
+      if (type === "brand") {
+        state.brand = state.brand === value ? null : value;
+        return;
+      }
+      
       if (Array.isArray(state[type])) {
         const index = state[type].indexOf(value);
         if (index > -1) {
@@ -215,7 +254,9 @@ export const filterSlice = createSlice({
     removeFilterValue: (state, action) => {
       const { type, value } = action.payload;
       
-      if (Array.isArray(state[type])) {
+      if (type === "category" || type === "brand") {
+        state[type] = null;
+      } else if (Array.isArray(state[type])) {
         state[type] = state[type].filter(item => item !== value);
       }
     }
@@ -235,6 +276,7 @@ export default filterSlice.reducer;
 
 // Selectors for easier access to filter state
 export const selectAllFilters = (state) => state.filters;
+
 export const selectActiveFilters = (state) => {
   const filters = state.filters;
   const activeFilters = {};
@@ -242,6 +284,10 @@ export const selectActiveFilters = (state) => {
   Object.keys(filters).forEach(key => {
     if (key === 'priceRange') {
       if (filters[key].min > 0 || filters[key].max < 1000000) {
+        activeFilters[key] = filters[key];
+      }
+    } else if (key === 'category' || key === 'brand') {
+      if (filters[key]) {
         activeFilters[key] = filters[key];
       }
     } else if (Array.isArray(filters[key]) && filters[key].length > 0) {

@@ -25,14 +25,8 @@ const Products = () => {
   const filterTimeoutRef = useRef(null);
 
   const loading = useSelector((state) => state.auth.loading);
-  const categories = useSelector((state) => state.filters.categories);
-  const gender = useSelector((state) => state.filters.gender);
-  const material = useSelector((state) => state.filters.material);
-  const color = useSelector((state) => state.filters.color);
-  const size = useSelector((state) => state.filters.size);
   const filters = useSelector((state) => state.filters);
-  const search = useSelector((state) => state.filters.searchQuery); // Updated to match filterSlice
-  const season = useSelector((state) => state.filters.season);
+  const search = useSelector((state) => state.filters.searchQuery);
 
   const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * productsPerPage,
@@ -68,6 +62,24 @@ const Products = () => {
     setTimeout(() => setShowProducts(true), 500);
   }, []);
 
+  // Check if filters are empty
+  const areFiltersEmpty = () => {
+    return (
+      !filters.category &&
+      !filters.subCategory &&
+      (!filters.roomType || filters.roomType.length === 0) &&
+      (!filters.style || filters.style.length === 0) &&
+      (!filters.material || filters.material.length === 0) &&
+      (!filters.color || filters.color.length === 0) &&
+      (!filters.priceRange || 
+        (filters.priceRange.min === 0 && filters.priceRange.max >= 100000)) &&
+      !search &&
+      !filters.ecoFriendly &&
+      filters.assemblyRequired === null &&
+      !filters.freeShipping
+    );
+  };
+
   // Debounced filtering effect
   useEffect(() => {
     // Clear existing timeout
@@ -80,19 +92,7 @@ const Products = () => {
 
     // Debounce the filtering
     filterTimeoutRef.current = setTimeout(() => {
-      const areFiltersEmpty = 
-        !filters.category && 
-        !filters.subCategory &&
-        filters.roomType.length === 0 &&
-        filters.style.length === 0 &&
-        filters.material.length === 0 &&
-        filters.color.length === 0 &&
-        (!filters.priceRange || 
-          (filters.priceRange.min === 0 && 
-           filters.priceRange.max === 1000000)) &&
-        !search;
-
-      if (areFiltersEmpty) {
+      if (areFiltersEmpty()) {
         setFilteredProducts(products);
         setCurrentPage(1);
         setIsFiltering(false);
@@ -101,50 +101,74 @@ const Products = () => {
 
       let filtered = [...products];
 
-      // Category filter
+      console.log("Applying filters:", filters);
+      console.log("Total products before filtering:", filtered.length);
+
+      // Category filter - This is the main fix
       if (filters.category) {
-        filtered = filtered.filter(product => 
-          product.category?._id === filters.category
-        );
+        console.log("Filtering by category:", filters.category);
+        filtered = filtered.filter(product => {
+          const categoryMatch = product.category && 
+            (typeof product.category === 'string' 
+              ? product.category === filters.category 
+              : product.category._id === filters.category
+            );
+          console.log(`Product ${product.name}: category=${product.category}, match=${categoryMatch}`);
+          return categoryMatch;
+        });
+        console.log("Products after category filter:", filtered.length);
       }
 
       // Sub-category filter
       if (filters.subCategory) {
-        filtered = filtered.filter(product => 
-          product.subCategory?._id === filters.subCategory
+        filtered = filtered.filter(product =>
+          product.subCategory && 
+          (typeof product.subCategory === 'string' 
+            ? product.subCategory === filters.subCategory 
+            : product.subCategory._id === filters.subCategory
+          )
         );
       }
 
       // Room type filter
-      if (filters.roomType.length > 0) {
+      if (filters.roomType && filters.roomType.length > 0) {
         filtered = filtered.filter(product =>
+          product.roomType && 
+          Array.isArray(product.roomType) &&
           product.roomType.some(room => filters.roomType.includes(room))
         );
       }
 
       // Style filter
-      if (filters.style.length > 0) {
+      if (filters.style && filters.style.length > 0) {
         filtered = filtered.filter(product =>
+          product.style && 
+          Array.isArray(product.style) &&
           product.style.some(s => filters.style.includes(s))
         );
       }
 
       // Material filter
-      if (filters.material.length > 0) {
+      if (filters.material && filters.material.length > 0) {
         filtered = filtered.filter(product =>
+          product.material && 
+          Array.isArray(product.material) &&
           product.material.some(m => filters.material.includes(m))
         );
       }
 
       // Color filter
-      if (filters.color.length > 0) {
+      if (filters.color && filters.color.length > 0) {
         filtered = filtered.filter(product =>
+          product.color && 
+          Array.isArray(product.color) &&
           product.color.some(c => filters.color.includes(c))
         );
       }
 
       // Price range filter
-      if (filters.priceRange) {
+      if (filters.priceRange && 
+          (filters.priceRange.min > 0 || filters.priceRange.max < 100000)) {
         filtered = filtered.filter(product =>
           product.price >= filters.priceRange.min && 
           product.price <= filters.priceRange.max
@@ -153,7 +177,7 @@ const Products = () => {
 
       // Boolean filters
       if (filters.ecoFriendly) {
-        filtered = filtered.filter(product => product.ecoFriendly);
+        filtered = filtered.filter(product => product.ecoFriendly === true);
       }
 
       if (filters.assemblyRequired !== null) {
@@ -163,19 +187,27 @@ const Products = () => {
       }
 
       if (filters.freeShipping) {
-        filtered = filtered.filter(product => product.freeShipping);
+        filtered = filtered.filter(product => product.freeShipping === true);
       }
 
       // Search query
-      if (search) {
-        const searchLower = search.toLowerCase();
-        filtered = filtered.filter(product =>
-          product.name.toLowerCase().includes(searchLower) ||
-          product.description.toLowerCase().includes(searchLower) ||
-          product.tags?.some(tag => tag.toLowerCase().includes(searchLower))
-        );
+      if (search && search.trim()) {
+        const searchLower = search.toLowerCase().trim();
+        filtered = filtered.filter(product => {
+          const searchFields = [
+            product.name,
+            product.description,
+            product.shortDescription,
+            ...(product.tags || [])
+          ].filter(Boolean);
+          
+          return searchFields.some(field => 
+            field.toLowerCase().includes(searchLower)
+          );
+        });
       }
 
+      console.log("Final filtered products:", filtered.length);
       setFilteredProducts(filtered);
       setCurrentPage(1);
       setIsFiltering(false);
@@ -199,10 +231,20 @@ const Products = () => {
       {/* Main Content - Products */}
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8 relative z-0">
         {/* Animated Header */}
-        <h1 className={`text-2xl font-bold mb-6 transition-all duration-800 hover:text-yellow-300 hover:scale-105 cursor-default ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-8 opacity-0'}`}>
-          Explore Products
-          <div className="h-1 bg-gradient-to-r from-[#FFD700] to-transparent mt-2 transform origin-left transition-transform duration-500 scale-x-0 group-hover:scale-x-100"></div>
-        </h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className={`text-2xl font-bold transition-all duration-800 hover:text-yellow-300 hover:scale-105 cursor-default ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-8 opacity-0'}`}>
+            Explore Products
+            <div className="h-1 bg-gradient-to-r from-[#FFD700] to-transparent mt-2 transform origin-left transition-transform duration-500 scale-x-0 group-hover:scale-x-100"></div>
+          </h1>
+
+          {/* Debug Info - Remove in production */}
+          <div className="text-xs text-gray-500">
+            <div>Total: {products.length} | Filtered: {filteredProducts.length}</div>
+            {filters.category && (
+              <div>Active Category: {filters.category}</div>
+            )}
+          </div>
+        </div>
 
         {loading ? (
           <div className="flex justify-center items-center h-[50vh]">
@@ -252,11 +294,24 @@ const Products = () => {
             {/* Enhanced No Products Message */}
             {filteredProducts.length === 0 && !loading && !isFiltering && (
               <div className="flex flex-col items-center justify-center h-[40vh] transition-all duration-800 translate-y-0 opacity-100">
-                <div className="text-6xl mb-4 animate-bounce">😔</div>
+                <div className="text-6xl mb-4">🔍</div>
                 <div className="text-2xl font-semibold mb-2 text-yellow-400">No Products Found</div>
-                <div className="text-gray-400 text-center max-w-md">
+                <div className="text-gray-400 text-center max-w-md mb-4">
                   Try adjusting your filters or search terms to find what you're looking for.
                 </div>
+                {/* Show active filters */}
+                {!areFiltersEmpty() && (
+                  <div className="text-sm text-gray-500 text-center">
+                    <div className="mb-2">Active filters:</div>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {filters.category && <span className="px-2 py-1 bg-yellow-400/20 rounded">Category</span>}
+                      {filters.roomType?.length > 0 && <span className="px-2 py-1 bg-yellow-400/20 rounded">Room Type ({filters.roomType.length})</span>}
+                      {filters.style?.length > 0 && <span className="px-2 py-1 bg-yellow-400/20 rounded">Style ({filters.style.length})</span>}
+                      {filters.material?.length > 0 && <span className="px-2 py-1 bg-yellow-400/20 rounded">Material ({filters.material.length})</span>}
+                      {search && <span className="px-2 py-1 bg-yellow-400/20 rounded">Search: "{search}"</span>}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -277,6 +332,30 @@ const Products = () => {
                 {[...Array(totalPages)].map((_, i) => {
                   const pageNum = i + 1;
                   const isActive = currentPage === pageNum;
+                  
+                  // Show only a subset of pages for better UX
+                  if (totalPages > 7) {
+                    if (pageNum === 1 || 
+                        pageNum === totalPages || 
+                        (pageNum >= currentPage - 2 && pageNum <= currentPage + 2)) {
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-4 py-2 rounded-lg border transition-all duration-300 hover:scale-110 active:scale-95 transform ${
+                            isActive
+                              ? "bg-[#FFD700] text-black font-bold shadow-lg scale-110 border-[#FFD700]"
+                              : "border-[#FFD700] hover:bg-[#FFD700] hover:text-black hover:shadow-lg"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    } else if (pageNum === currentPage - 3 || pageNum === currentPage + 3) {
+                      return <span key={i} className="px-2 text-gray-400">...</span>;
+                    }
+                    return null;
+                  }
                   
                   return (
                     <button
