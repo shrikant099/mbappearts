@@ -406,7 +406,7 @@ const AdminDashboard = () => {
             
             <button 
               onClick={() => {
-                toast.loading("Refreshing dashboard...");
+                
                 refreshData();
               }}
               className="bg-yellow-500 text-black px-3 py-2 sm:px-4 rounded-lg hover:bg-yellow-600 transition-colors text-sm sm:text-base"
