@@ -17,23 +17,22 @@ export default function ProductDetail() {
   const userRole = useSelector((state) => state.auth.role);
   const dispatch = useDispatch();
 
+  // --- State setup ---
   const [selectedImage, setSelectedImage] = useState(images[0]?.url || "");
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [animateButtons, setAnimateButtons] = useState(false);
 
-  // Product selection states - changed from arrays to single values
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedMaterial, setSelectedMaterial] = useState("");
   const [selectedStyle, setSelectedStyle] = useState("");
   const [selectedRoomType, setSelectedRoomType] = useState("");
-  const [selectedSize, setSelectedSize] = useState(""); // Add size selection if needed
+  const [selectedSize, setSelectedSize] = useState(""); // For furniture: optional
 
-  // Add new states for furniture specific features
   const [selectedVariant, setSelectedVariant] = useState(null);
 
-  // Review related states
+  // Reviews
   const [reviews, setReviews] = useState([]);
   const [canReview, setCanReview] = useState(false);
   const [eligibleOrders, setEligibleOrders] = useState([]);
@@ -47,53 +46,44 @@ export default function ProductDetail() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewsLoading, setReviewsLoading] = useState(true);
 
+  // --- Cart and Buy Now handlers with selection validation ---
   const buyNowHandler = () => {
     if (userRole !== "user") {
       toast.error("Please log in as a valid user!");
       return;
     }
-
-    // Validate stock
     if (!product || product.stock <= 0) {
       toast.error("Product is out of stock!");
       return;
     }
-
-    // Validate required selections
     if (product.color && product.color.length > 1 && !selectedColor) {
       toast.error("Please select a color");
       return;
     }
-
     if (product.material && product.material.length > 1 && !selectedMaterial) {
       toast.error("Please select a material");
       return;
     }
-
     if (product.style && product.style.length > 1 && !selectedStyle) {
       toast.error("Please select a style");
       return;
     }
-
     if (product.roomType && product.roomType.length > 1 && !selectedRoomType) {
       toast.error("Please select a room type");
       return;
     }
-
-    // Validate variant selection if variants exist
     if (product.variants && product.variants.length > 0 && !selectedVariant) {
       toast.error("Please select a variant");
       return;
     }
-
-    // Create product object with selected options
+    // Compose product data for order
     const productToOrder = {
       ...product,
       selectedColor: selectedColor || (product.color && product.color[0]) || "",
       selectedMaterial: selectedMaterial || (product.material && product.material[0]) || "",
       selectedStyle: selectedStyle || (product.style && product.style[0]) || "",
       selectedRoomType: selectedRoomType || (product.roomType && product.roomType[0]) || "",
-      selectedSize: selectedSize || "Standard", // Default size if not specified
+      selectedSize: selectedSize || "Standard", // Default size
       selectedVariant,
       price: selectedVariant ? selectedVariant.price : product.price,
     };
@@ -107,26 +97,21 @@ export default function ProductDetail() {
       toast.error("Please log in as a valid user!");
       return;
     }
-
     if (!product || !product._id || product.stock <= 0) {
       toast.error("Product is out of stock!");
       return;
     }
-
-    // Validate required selections
     if (product.color && product.color.length > 1 && !selectedColor) {
       toast.error("Please select a color");
       return;
     }
-
     if (product.material && product.material.length > 1 && !selectedMaterial) {
       toast.error("Please select a material");
       return;
     }
-
     try {
       setIsAddingToCart(true);
-      
+
       const productToAdd = {
         ...product,
         selectedColor: selectedColor || (product.color && product.color[0]) || "",
@@ -137,11 +122,10 @@ export default function ProductDetail() {
         selectedVariant,
         price: selectedVariant ? selectedVariant.price : product.price,
       };
-      
+
       dispatch(addToCart(productToAdd));
       toast.success("Added to cart!");
     } catch (error) {
-      console.error("Failed to add to cart:", error);
       toast.error("Failed to add to cart");
     } finally {
       setIsAddingToCart(false);
@@ -154,111 +138,93 @@ export default function ProductDetail() {
     setTimeout(() => setImageLoading(false), 200);
   };
 
-  // Fetch user's orders to check eligibility for review
+  // --- Review and eligibility fetchers ---
   const checkReviewEligibility = async () => {
     if (!user || !token || !product?._id) {
       setCanReview(false);
       return;
     }
-
     try {
       const ordersRes = await apiConnector(
-        "GET", 
-        orderEndpoints.userOrdersWithoutPagination, 
-        null, 
-        {
-          Authorization: `Bearer ${token}`
-        }
+        "GET",
+        orderEndpoints.userOrdersWithoutPagination,
+        null,
+        { Authorization: `Bearer ${token}` }
       );
+      const deliveredOrders = ordersRes.data.orders.filter(order =>
+        order.currentStatus === "Delivered" &&
+        order.items.some(item => item.product._id === product._id)
+      );
+      setEligibleOrders(deliveredOrders);
+      setCanReview(deliveredOrders.length > 0);
 
-      console.log("Orders Response:", ordersRes.data);
-
-      if (ordersRes.data.success) {
-        // Check for delivered orders containing this product
-        const deliveredOrders = ordersRes.data.orders.filter(order => 
-          order.currentStatus === "Delivered" && 
-          order.items.some(item => item.product === product._id)
-        );
-
-        console.log("Delivered Orders:", deliveredOrders);
-        setEligibleOrders(deliveredOrders);
-        setCanReview(deliveredOrders.length > 0);
-
-        // Check for existing review
-        try {
-          const reviewRes = await apiConnector(
-            "GET", 
-            `${reviewEndpoints.getUserReviewForProduct}${product._id}`, 
-            null, 
-            { Authorization: `Bearer ${token}` }
-          );
-
-          console.log("Review Response:", reviewRes.data);
-          
-          if (reviewRes.data && reviewRes.data.review) {
-            setExistingReview(reviewRes.data.review);
-            setReviewForm({
-              rating: reviewRes.data.review.rating,
-              comment: reviewRes.data.review.comment,
-              selectedOrderId: reviewRes.data.review.order
-            });
-          }
-        } catch (reviewError) {
-          console.log("Error fetching review:", reviewError);
-        }
+      // Check for existing review
+      const reviewRes = await apiConnector(
+        "GET",
+        `${reviewEndpoints.getUserReviewForProduct}${product._id}`,
+        null,
+        { Authorization: `Bearer ${token}` }
+      );
+      if (reviewRes.data && reviewRes.data.review) {
+        setExistingReview(reviewRes.data.review);
+        setReviewForm({
+          rating: reviewRes.data.review.rating,
+          comment: reviewRes.data.review.comment,
+          selectedOrderId: reviewRes.data.review.order
+        });
+      } else {
+        setExistingReview(null);
+        setReviewForm({
+          rating: 5,
+          comment: "",
+          selectedOrderId: ""
+        });
       }
     } catch (error) {
-      console.log("Error checking review eligibility:", error);
+      setCanReview(false);
+      setExistingReview(null);
+      setEligibleOrders([]);
     }
   };
 
-  // Fetch product reviews
   const fetchProductReviews = async () => {
     if (!product?._id) return;
-
     try {
       setReviewsLoading(true);
       const response = await apiConnector(
-        "GET", 
+        "GET",
         `${reviewEndpoints.getReviewByProductId}${product._id}`
       );
-
-      console.log("Reviews Response:", response.data);
-
       if (response.data && response.data.reviews) {
         setReviews(response.data.reviews);
       }
     } catch (error) {
-      console.log("Error fetching reviews:", error);
       setReviews([]);
     } finally {
       setReviewsLoading(false);
     }
   };
 
-  // Submit or update review
+  // --- FIXED: Review submit handler with robust refresh ---
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
-    
     if (!reviewForm.comment.trim()) {
       toast.error("Please add a comment");
       return;
     }
-
     if (!reviewForm.selectedOrderId && !existingReview) {
       toast.error("Please select an order");
       return;
     }
-
     setIsSubmittingReview(true);
 
     try {
       let response;
-      
       if (existingReview) {
         // Update existing review
-        response = await apiConnector("PUT", 
-          `${reviewEndpoints.updateReview}${existingReview._id}`, 
+        response = await apiConnector(
+          "PUT",
+          `${reviewEndpoints.updateReview}${existingReview._id}`,
           {
             rating: reviewForm.rating,
             comment: reviewForm.comment
@@ -267,8 +233,9 @@ export default function ProductDetail() {
         );
       } else {
         // Create new review
-        response = await apiConnector("POST", 
-          `${reviewEndpoints.createReview}${product._id}${reviewForm.selectedOrderId}`, 
+        response = await apiConnector(
+          "POST",
+          `${reviewEndpoints.createReview}${product._id}/${reviewForm.selectedOrderId}`,
           {
             rating: reviewForm.rating,
             comment: reviewForm.comment
@@ -280,66 +247,77 @@ export default function ProductDetail() {
       if (response.data.message !== "You have already reviewed this product for this order") {
         toast.success(existingReview ? "Review updated!" : "Review submitted!");
         setShowReviewModal(false);
-        
-        // Refresh reviews and check eligibility
-        await fetchProductReviews();
-        await checkReviewEligibility();
+
+        // Always re-fetch reviews and eligibility
+        const reviewsRes = await apiConnector(
+          "GET",
+          `${reviewEndpoints.getReviewByProductId}${product._id}`
+        );
+        setReviews(reviewsRes.data.reviews || []);
+
+        // Fetch eligible orders again
+        const ordersRes = await apiConnector(
+          "GET",
+          orderEndpoints.userOrdersWithoutPagination,
+          null,
+          { Authorization: `Bearer ${token}` }
+        );
+        const deliveredOrders = ordersRes.data.orders.filter(order =>
+          order.currentStatus === "Delivered" &&
+          order.items.some(item => item.product._id === product._id)
+        );
+        setEligibleOrders(deliveredOrders);
+
+        // Refresh existingReview with updated review object
+        const userReview = reviewsRes.data.reviews.find(r =>
+          r.user?._id === user?._id
+        );
+        setExistingReview(userReview || null);
+
+        // Reset form
+        setReviewForm({ rating: 5, comment: "", selectedOrderId: "" });
       } else {
         toast.error("You have already reviewed this product for this order");
       }
     } catch (error) {
-      console.error("Review submission error:", error);
       toast.error(error.response?.data?.message || "Failed to submit review");
     } finally {
       setIsSubmittingReview(false);
     }
   };
 
-  // Render star rating
-  const renderStars = (rating, interactive = false, onRatingChange = null) => {
-    return (
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            onClick={() => interactive && onRatingChange && onRatingChange(star)}
-            className={`text-xl ${
-              star <= rating 
-                ? "text-yellow-400" 
-                : "text-gray-600"
-            } ${interactive ? "hover:text-yellow-300 cursor-pointer" : "cursor-default"} transition-colors duration-200`}
-            disabled={!interactive}
-          >
-            ★
-          </button>
-        ))}
-      </div>
-    );
-  };
+  // --- Star rating with optional click ---
+  const renderStars = (rating, interactive = false, onRatingChange = null) => (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => interactive && onRatingChange && onRatingChange(star)}
+          className={`text-xl ${star <= rating
+            ? "text-yellow-400"
+            : "text-gray-600"
+          } ${interactive ? "hover:text-yellow-300 cursor-pointer" : "cursor-default"} transition-colors duration-200`}
+          disabled={!interactive}
+        >
+          ★
+        </button>
+      ))}
+    </div>
+  );
 
+  // --- Side effects ---
   useEffect(() => {
     if (images.length > 0) {
       setSelectedImage(images[0].url);
       setImageLoading(false);
     }
-    
-    // Set default selections if there's only one option
     if (product) {
-      if (product.color && product.color.length === 1) {
-        setSelectedColor(product.color[0]);
-      }
-      if (product.material && product.material.length === 1) {
-        setSelectedMaterial(product.material[0]);
-      }
-      if (product.style && product.style.length === 1) {
-        setSelectedStyle(product.style[0]);
-      }
-      if (product.roomType && product.roomType.length === 1) {
-        setSelectedRoomType(product.roomType[0]);
-      }
+      if (product.color && product.color.length === 1) setSelectedColor(product.color[0]);
+      if (product.material && product.material.length === 1) setSelectedMaterial(product.material[0]);
+      if (product.style && product.style.length === 1) setSelectedStyle(product.style[0]);
+      if (product.roomType && product.roomType.length === 1) setSelectedRoomType(product.roomType[0]);
     }
-    
     setTimeout(() => setIsVisible(true), 100);
     setTimeout(() => setAnimateButtons(true), 800);
   }, [images, product]);
@@ -349,8 +327,10 @@ export default function ProductDetail() {
       fetchProductReviews();
       checkReviewEligibility();
     }
+    // eslint-disable-next-line
   }, [product?._id, user, token]);
 
+  // --- UI ---
   const detailItems = [
     { label: "Brand", value: product?.brand?.name || "N/A" },
     { label: "Category", value: product?.category?.name || "Uncategorized" },
@@ -358,14 +338,12 @@ export default function ProductDetail() {
     { label: "Assembly Time", value: product?.assemblyTime ? `${product.assemblyTime} minutes` : "—" },
     { label: "Weight Capacity", value: product?.weightCapacity ? `${product.weightCapacity} kg` : "—" },
   ];
-
   const offers = [
     { icon: "🪙", text: "Cashback: Upto ₹17.00 as wallet credit" },
     { icon: "🏦", text: "Bank Offer: ₹2,000 off on credit card payments" },
     { icon: "🤝", text: "Combo Offer: Buy 2 get 5% off, Buy 3 get 7% off" }
   ];
-
-  const averageRating = reviews.length > 0 
+  const averageRating = reviews.length > 0
     ? (reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length).toFixed(1)
     : "0.0";
 

@@ -74,16 +74,12 @@ export default function Footer() {
 
   const companyLinks = [
     { name: 'About Us', href: '/about' },
-    { name: 'Our Services', href: '/services' },
-    { name: 'Custom Furniture', href: '/custom' },
-    { name: 'Interior Design', href: '/interior-design' }
+    
   ];
 
   const helpLinks = [
     { name: 'FAQ', href: '/faq' },
     { name: 'Support Center', href: '/support' },
-    { name: 'Delivery Info', href: '/delivery' },
-    { name: 'Returns & Exchange', href: '/returns' },
     { name: 'Care Guide', href: '/care-guide' }
   ];
 
@@ -376,14 +372,7 @@ export default function Footer() {
                   <p>&copy; 2025 Mbappe Arts. All rights reserved.</p>
                 </div>
                 
-                <div className="flex gap-6 text-sm">
-                  <a href="/privacy" className="text-gray-300 hover:text-[#FFD700] transition-colors duration-300">
-                    Privacy Policy
-                  </a>
-                  <a href="/terms" className="text-gray-300 hover:text-[#FFD700] transition-colors duration-300">
-                    Terms of Service
-                  </a>
-                </div>
+               
               </div>
             </div>
           </div>

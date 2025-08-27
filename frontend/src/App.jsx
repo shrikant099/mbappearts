@@ -32,6 +32,9 @@ import ResetForgotPassword from "./pages/ResetForgotPassword";
 import FeaturedProduct from "./pages/FeaturedProducts";
 import NewArrival from "./pages/NewArrival";
 import OnSale from "./pages/Onsale";
+import FAQ from "./pages/Faq";
+import SupportCenter from "./pages/SupportCenter";
+import CustomerCareGuide from "./pages/CareGuide";
 
 const App = () => {
   
@@ -91,6 +94,10 @@ const App = () => {
           <Route path="/featuredproducts" element={<FeaturedProduct/>}/>
             <Route path="/newarrival" element={<NewArrival/>}/>
             <Route path="/onsale" element={<OnSale/>}/>
+            <Route path="/faq" element={<FAQ/>}/>
+             <Route path="/support" element={<SupportCenter/>}/>
+            <Route path="/care-guide" element={<CustomerCareGuide/>}/>
+            
           <Route
             path="/create-order"
             element={

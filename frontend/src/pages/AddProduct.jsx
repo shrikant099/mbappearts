@@ -91,18 +91,15 @@ const AddProduct = () => {
 
   // Available options for furniture
   const roomTypeOptions = [
-    "Living Room", "Bedroom", "Dining Room", "Kitchen", "Office", 
-    "Study Room", "Bathroom", "Balcony", "Garden", "Kids Room"
+    'Living Room', 'Bedroom', 'Dining Room', 'Kitchen', 'Bathroom', 'Office', 'Outdoor', 'Entryway', 'Kids Room', 'Other'
   ];
   
   const styleOptions = [
-    "Modern", "Traditional", "Contemporary", "Vintage", "Industrial", 
-    "Scandinavian", "Minimalist", "Rustic", "Classic", "Art Deco"
+    'Modern', 'Contemporary', 'Minimalist', 'Mid-Century', 'Industrial', 'Traditional', 'Transitional', 'Rustic', 'Coastal', 'Scandinavian', 'Bohemian', 'Farmhouse', 'Art Deco', 'Asian', 'Other'
   ];
   
   const materialOptions = [
-    "Wood", "Metal", "Glass", "Plastic", "Fabric", "Leather", 
-    "Marble", "Stone", "Rattan", "Bamboo", "MDF", "Plywood"
+   'Wood', 'Metal', 'Glass', 'Plastic', 'Fabric', 'Leather', 'Marble', 'Stone', 'Rattan', 'Wicker', 'Bamboo', 'Other'
   ];
   
   const colorOptions = [
@@ -623,8 +620,8 @@ const AddProduct = () => {
 
       {/* Modal */}
       {(showAddModal || showEditModal) && (
-        <div className="fixed z-[151] inset-0 bg-black/80 backdrop-blur-md flex justify-center items-center p-2 sm:p-4">
-          <div className="bg-[#111] text-[#FFD770] p-4 sm:p-6 rounded-xl max-w-6xl w-full hidescroll max-h-[95vh] overflow-y-auto shadow-[0_0_20px_rgba(255,215,112,0.3)] animate-fade-in border border-[#FFD770]/30 transition-all duration-300">
+        <div className="fixed z-[151] inset-0  backdrop-blur-md flex justify-center items-center p-2 sm:p-4">
+          <div className="bg-black text-yellow-700 p-4 sm:p-6 rounded-xl max-w-6xl w-full hidescroll max-h-[95vh] overflow-y-auto shadow-[0_0_20px_rgba(255,215,112,0.3)] animate-fade-in border border-[#FFD770]/30 transition-all duration-300">
             <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center uppercase">
               {showAddModal ? "Add Product" : "Edit Product"}
             </h3>
@@ -1074,7 +1071,7 @@ const AddProduct = () => {
                     type="date"
                     value={formData.releaseDate}
                     onChange={(e) => setFormData({ ...formData, releaseDate: e.target.value })}
-                    className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md focus:outline-none text-sm"
+                    className="w-full px-3 py-2 bg-yellow-700 text-yellow-100 border border-[#FFD770]/40 rounded-md focus:outline-none text-sm"
                   />
                 </div>
                 
@@ -1086,7 +1083,7 @@ const AddProduct = () => {
                         type="date"
                         value={formData.saleStartDate}
                         onChange={(e) => setFormData({ ...formData, saleStartDate: e.target.value })}
-                        className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md focus:outline-none text-sm"
+                        className="w-full px-3 py-2  bg-yellow-700 text-yellow-100 border border-[#FFD770]/40 rounded-md focus:outline-none text-sm"
                         required={formData.isOnSale}
                       />
                     </div>
@@ -1096,7 +1093,7 @@ const AddProduct = () => {
                         type="date"
                         value={formData.saleEndDate}
                         onChange={(e) => setFormData({ ...formData, saleEndDate: e.target.value })}
-                        className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md focus:outline-none text-sm"
+                        className="w-full px-3 py-2  bg-yellow-700 text-yellow-100 border border-[#FFD770]/40 rounded-md focus:outline-none text-sm"
                         required={formData.isOnSale}
                         min={formData.saleStartDate}
                       />
