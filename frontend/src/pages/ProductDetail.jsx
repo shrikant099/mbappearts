@@ -188,7 +188,7 @@ export default function ProductDetail() {
         try {
           const reviewRes = await apiConnector(
             "GET", 
-            `${reviewEndpoints.getUserReviewForProduct}/${product._id}`, 
+            `${reviewEndpoints.getUserReviewForProduct}${product._id}`, 
             null, 
             { Authorization: `Bearer ${token}` }
           );
@@ -220,7 +220,7 @@ export default function ProductDetail() {
       setReviewsLoading(true);
       const response = await apiConnector(
         "GET", 
-        `${reviewEndpoints.getReviewByProductId}/${product._id}`
+        `${reviewEndpoints.getReviewByProductId}${product._id}`
       );
 
       console.log("Reviews Response:", response.data);
@@ -268,7 +268,7 @@ export default function ProductDetail() {
       } else {
         // Create new review
         response = await apiConnector("POST", 
-          `${reviewEndpoints.createReview}${product._id}/${reviewForm.selectedOrderId}`, 
+          `${reviewEndpoints.createReview}${product._id}${reviewForm.selectedOrderId}`, 
           {
             rating: reviewForm.rating,
             comment: reviewForm.comment

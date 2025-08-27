@@ -73,7 +73,7 @@ const Products = () => {
       (!filters.color || filters.color.length === 0) &&
       (!filters.priceRange || 
         (filters.priceRange.min === 0 && filters.priceRange.max >= 100000)) &&
-      !search &&
+      !search?.trim() && // Updated search check
       !filters.ecoFriendly &&
       filters.assemblyRequired === null &&
       !filters.freeShipping
@@ -92,17 +92,40 @@ const Products = () => {
 
     // Debounce the filtering
     filterTimeoutRef.current = setTimeout(() => {
+      let filtered = [...products];
+
+      // Move search filtering to the beginning
+      if (search && search.trim()) {
+        const searchLower = search.toLowerCase().trim();
+        filtered = filtered.filter(product => {
+          // Expand searchable fields
+          const searchFields = [
+            product.name,
+            product.description,
+            product.shortDescription,
+            ...(product.tags || []),
+            ...(product.material || []),
+            ...(product.style || []),
+            ...(product.roomType || []),
+            product.category?.name,
+            product.brand?.name,
+          ].filter(Boolean); // Remove null/undefined values
+          
+          // Check if any field contains the search term
+          return searchFields.some(field => 
+            String(field).toLowerCase().includes(searchLower)
+          );
+        });
+        
+        console.log(`Search results for "${search}":`, filtered.length);
+      }
+
       if (areFiltersEmpty()) {
         setFilteredProducts(products);
         setCurrentPage(1);
         setIsFiltering(false);
         return;
       }
-
-      let filtered = [...products];
-
-      console.log("Applying filters:", filters);
-      console.log("Total products before filtering:", filtered.length);
 
       // Category filter - This is the main fix
       if (filters.category) {
@@ -188,23 +211,6 @@ const Products = () => {
 
       if (filters.freeShipping) {
         filtered = filtered.filter(product => product.freeShipping === true);
-      }
-
-      // Search query
-      if (search && search.trim()) {
-        const searchLower = search.toLowerCase().trim();
-        filtered = filtered.filter(product => {
-          const searchFields = [
-            product.name,
-            product.description,
-            product.shortDescription,
-            ...(product.tags || [])
-          ].filter(Boolean);
-          
-          return searchFields.some(field => 
-            field.toLowerCase().includes(searchLower)
-          );
-        });
       }
 
       console.log("Final filtered products:", filtered.length);

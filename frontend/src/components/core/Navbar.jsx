@@ -105,14 +105,39 @@ const Navbar = () => {
     }
   };
 
+  // Update the searchHandler function
   const searchHandler = () => {
-    dispatch(setSearchData(searchBar));
+    if (!searchBar.trim()) {
+      toast.error("Please enter a search term");
+      return;
+    }
 
-    navigate("/products");
-    setShowSearch(false);
-    setSearchBar("");
+    try {
+      // Clear any existing filters first
+      dispatch(clearFilters());
+      
+      // Set the search query
+      dispatch(setSearchData(searchBar.trim()));
 
-    toast.success(`Results for ${searchBar}`);
+      // Close search panel and clear input
+      setShowSearch(false);
+      setSearchBar("");
+      
+      // Navigate to products page
+      navigate("/products");
+      
+      toast.success(`Showing results for "${searchBar}"`);
+    } catch (error) {
+      console.error("Search error:", error);
+      toast.error("Search failed. Please try again.");
+    }
+  };
+
+  // Update the search input to handle Enter key
+  const handleSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      searchHandler();
+    }
   };
 
   return (
@@ -282,9 +307,11 @@ const Navbar = () => {
                     <div className="flex gap-0 ">
                       <input
                         type="text"
+                        value={searchBar}
                         placeholder="Search furniture..."
                         onChange={(e) => setSearchBar(e.target.value)}
-                        className="bg-black h-[8vh]  pl-4 text-[#ffd700] placeholder:text-[#FFD700] lg:w-[50vw] border-black rounded-l-2xl"
+                        onKeyPress={handleSearchKeyPress}
+                        className="bg-black h-[8vh]  pl-4 text-[#ffd700] placeholder:text-[#FFD700] lg:w-[50vw] border-black rounded-l-2xl focus:outline-none focus:ring-1 focus:ring-[#FFD700]"
                       />
                       <button
                         className="bg-black h-[8vh] w-[15vw] lg:w-[5vw] flex justify-center items-center rounded-r-2xl "
