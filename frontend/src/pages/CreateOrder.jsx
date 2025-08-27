@@ -137,22 +137,86 @@ const CreateOrder = () => {
     }
   };
 
+  // Add these helper functions before calculateOrderTotals
+  const calculateShippingFee = (items) => {
+    let totalVolume = 0;
+    let totalWeight = 0;
+
+    items.forEach(item => {
+      if (item.dimensions) {
+        const volume = (item.dimensions.length || 0) * 
+                      (item.dimensions.width || 0) * 
+                      (item.dimensions.height || 0);
+        totalVolume += volume * (item.quantity || 1);
+      }
+      if (item.weight) {
+        totalWeight += item.weight * (item.quantity || 1);
+      }
+    });
+
+    // Base shipping rate
+    let shippingFee = 500;
+
+    // Add volume-based fee (per cubic meter)
+    shippingFee += Math.floor(totalVolume / 1000000) * 100;
+
+    // Add weight-based fee (per 10kg)
+    shippingFee += Math.floor(totalWeight / 10) * 50;
+
+    // Cap shipping fee at maximum value
+    return Math.min(shippingFee, 2000);
+  };
+
+  const calculateSingleProductShipping = (product) => {
+    if (!product.dimensions || !product.weight) {
+      return 500; // Base rate for products without dimensions/weight
+    }
+
+    const volume = (product.dimensions.length || 0) * 
+                  (product.dimensions.width || 0) * 
+                  (product.dimensions.height || 0);
+
+    let shippingFee = 500; // Base rate
+    shippingFee += Math.floor(volume / 1000000) * 100; // Volume-based fee
+    shippingFee += Math.floor(product.weight / 10) * 50; // Weight-based fee
+
+    return Math.min(shippingFee, 2000); // Cap at maximum
+  };
+
+  const calculateCartDiscount = (items) => {
+    let discount = 0;
+    items.forEach(item => {
+      if (item.comparePrice && item.comparePrice > item.price) {
+        discount += (item.comparePrice - item.price) * (item.quantity || 1);
+      }
+    });
+    return discount;
+  };
+
+  const calculateProductDiscount = (product) => {
+    if (product.comparePrice && product.comparePrice > product.price) {
+      return product.comparePrice - product.price;
+    }
+    return 0;
+  };
+
   // Calculate order totals
   const calculateOrderTotals = () => {
     if (isFromCart && cartItems.length > 0) {
       const subtotal = cartTotal;
-      const shippingFee = 0;
-      const tax = 0;
-      const discount = 0;
-      const total = subtotal + shippingFee + tax;
+      // Calculate shipping based on total volume and weight
+      const shippingFee = calculateShippingFee(cartItems);
+      const tax = Math.round(subtotal * 0.18); // 18% GST
+      const discount = calculateCartDiscount(cartItems);
+      const total = subtotal + shippingFee + tax - discount;
       
       return { subtotal, shippingFee, tax, discount, total };
     } else if (product) {
-      const subtotal = product.price;
-      const shippingFee = 50;
-      const tax = Math.round(subtotal * 0.05);
-      const discount = 0;
-      const total = subtotal + shippingFee + tax;
+      const subtotal = product.selectedVariant?.price || product.price;
+      const shippingFee = calculateSingleProductShipping(product);
+      const tax = Math.round(subtotal * 0.18); // 18% GST
+      const discount = calculateProductDiscount(product);
+      const total = subtotal + shippingFee + tax - discount;
       
       return { subtotal, shippingFee, tax, discount, total };
     }
@@ -166,23 +230,29 @@ const CreateOrder = () => {
       return cartItems.map(item => ({
         productId: item._id,
         quantity: item.quantity || 1,
-        price: item.price,
+        price: item.selectedVariant?.price || item.price,
         name: item.name,
-        image: item.image || item.images?.[0]?.url,
-        // Ensure size and color are always set
-        size: item.size || "Default",
-        color: item.color || "Default"
+        image: item.images?.[0]?.url,
+        variant: item.selectedVariant ? {
+          material: item.selectedVariant.material,
+          finish: item.selectedVariant.finish
+        } : null,
+        material: item.material?.[0],
+        color: item.color?.[0]
       }));
     } else if (product) {
       return [{
         productId: product._id,
         quantity: 1,
+        price: product.selectedVariant?.price || product.price,
         name: product.name,
-        price: product.price,
         image: product.images?.[0]?.url,
-        // Ensure size and color are always set
-        size: product.size || "Default",
-        color: product.color || "Default"
+        variant: product.selectedVariant ? {
+          material: product.selectedVariant.material,
+          finish: product.selectedVariant.finish
+        } : null,
+        material: product.material?.[0],
+        color: product.color?.[0]
       }];
     }
     
@@ -431,12 +501,18 @@ const CreateOrder = () => {
               />
               <div className="flex-1">
                 <h3 className="font-semibold">{item?.name}</h3>
+                {item?.selectedVariant && (
+                  <p className="text-sm text-gray-400">
+                    {item.selectedVariant.material} - {item.selectedVariant.finish}
+                  </p>
+                )}
                 <p className="text-sm text-gray-400">
-                  Price: ₹{item?.price} {isFromCart && `× ${item?.quantity || 1}`}
+                  Price: ₹{item?.selectedVariant?.price || item?.price}
+                  {isFromCart && ` × ${item?.quantity || 1}`}
                 </p>
-                {isFromCart && (
-                  <p className="text-sm font-semibold">
-                    Subtotal: ₹{(item?.price * (item?.quantity || 1))}
+                {item?.comparePrice && (
+                  <p className="text-sm text-red-400">
+                    Save: ₹{item.comparePrice - (item?.selectedVariant?.price || item?.price)}
                   </p>
                 )}
               </div>
