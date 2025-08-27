@@ -338,17 +338,7 @@ const ProductSidebar = () => {
               />
               Assembly Required
             </label>
-            <label className="flex items-center mb-1">
-              <input
-                type="checkbox"
-                checked={filters.freeShipping || false}
-                onChange={(e) =>
-                  handleCheckboxChange("freeShipping", e.target.checked, e.target.checked)
-                }
-                className="mr-2"
-              />
-              Free Shipping
-            </label>
+            
           </div>
         </div>
       </div>

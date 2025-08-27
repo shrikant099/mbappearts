@@ -23,9 +23,12 @@ export default function ProductDetail() {
   const [imageLoading, setImageLoading] = useState(true);
   const [animateButtons, setAnimateButtons] = useState(false);
 
-  // Size and Color selection states
+  // Remove unused states
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
+
+  // Add new states for furniture specific features
+  const [selectedVariant, setSelectedVariant] = useState(null);
 
   // Review related states
   const [reviews, setReviews] = useState([]);
@@ -47,35 +50,26 @@ export default function ProductDetail() {
       return;
     }
 
-    // Set default values if no selection is required
-    let finalSize = "Default";
-    let finalColor = "Default";
-
-    // Only validate and use selected values if the product has size/color options
-    if (product?.size && product.size.length > 0) {
-      if (!selectedSize) {
-        toast.error("Please select a size");
-        return;
-      }
-      finalSize = selectedSize;
+    // Validate stock
+    if (!product || product.stock <= 0) {
+      toast.error("Product is out of stock!");
+      return;
     }
 
-    if (product?.color && product.color.length > 0) {
-      if (!selectedColor) {
-        toast.error("Please select a color");
-        return;
-      }
-      finalColor = selectedColor;
+    // Validate variant selection if variants exist
+    if (product.variants && product.variants.length > 0 && !selectedVariant) {
+      toast.error("Please select a variant");
+      return;
     }
 
-    // Add selected size and color to product in Redux store
-    const productWithSelections = {
+    // Create product object with selected options
+    const productToOrder = {
       ...product,
-      size: finalSize,
-      color: finalColor
+      selectedVariant,
+      price: selectedVariant ? selectedVariant.price : product.price,
     };
-    
-    dispatch(setProductData(productWithSelections));
+
+    dispatch(setProductData(productToOrder));
     navigate("/create-order");
   };
 
@@ -86,29 +80,8 @@ export default function ProductDetail() {
     }
 
     if (!product || !product._id || product.stock <= 0) {
-      toast.error("Product is out of stock or invalid");
+      toast.error("Product is out of stock!");
       return;
-    }
-
-    // Set default values if no selection is required
-    let finalSize = "Default";
-    let finalColor = "Default";
-
-    // Only validate and use selected values if the product has size/color options
-    if (product?.size && product.size.length > 0) {
-      if (!selectedSize) {
-        toast.error("Please select a size");
-        return;
-      }
-      finalSize = selectedSize;
-    }
-
-    if (product?.color && product.color.length > 0) {
-      if (!selectedColor) {
-        toast.error("Please select a color");
-        return;
-      }
-      finalColor = selectedColor;
     }
 
     try {
@@ -116,8 +89,8 @@ export default function ProductDetail() {
       
       const productToAdd = {
         ...product,
-        size: finalSize,
-        color: finalColor
+        selectedVariant,
+        price: selectedVariant ? selectedVariant.price : product.price,
       };
       
       dispatch(addToCart(productToAdd));
@@ -304,8 +277,12 @@ export default function ProductDetail() {
   const detailItems = [
     { label: "Brand", value: product?.brand?.name || "N/A" },
     { label: "Category", value: product?.category?.name || "Uncategorized" },
-    { label: "Material", value: product?.material || "—" },
-    { label: "Gender", value: product?.gender || "Unisex" },
+    { label: "Room Type", value: product?.roomType?.join(", ") || "—" },
+    { label: "Style", value: product?.style?.join(", ") || "—" },
+    { label: "Material", value: product?.material?.join(", ") || "—" },
+    { label: "Assembly Required", value: product?.assemblyRequired ? "Yes" : "No" },
+    { label: "Assembly Time", value: product?.assemblyTime ? `${product.assemblyTime} minutes` : "—" },
+    { label: "Weight Capacity", value: product?.weightCapacity ? `${product.weightCapacity} kg` : "—" },
   ];
 
   const offers = [
@@ -361,75 +338,74 @@ export default function ProductDetail() {
             ))}
           </div>
 
-          {/* Size Selection */}
-          {product?.size && Array.isArray(product.size) && product.size.length > 0 && (
+          {/* Replace Size/Color selection with Variants */}
+          {product?.variants && product.variants.length > 0 && (
             <div className={`transition-all duration-600 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-              <h3 className="text-lg font-semibold mb-3 text-[#ecba49]">Select Size:</h3>
+              <h3 className="text-lg font-semibold mb-3 text-[#ecba49]">Select Variant:</h3>
               <div className="flex flex-wrap gap-3">
-                {product.size.map((size, idx) => (
+                {product.variants.map((variant, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setSelectedSize(size)}
+                    onClick={() => setSelectedVariant(variant)}
                     className={`px-4 py-2 border-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 ${
-                      selectedSize === size
+                      selectedVariant === variant
                         ? "border-[#ecba49] bg-[#ecba49] text-black shadow-lg scale-105"
                         : "border-[#ecba49]/50 text-[#ecba49] hover:border-[#ecba49] hover:bg-[#ecba49]/10"
                     }`}
-                    style={{ transitionDelay: `${idx * 50}ms` }}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-              {selectedSize && (
-                <p className="text-sm text-gray-400 mt-2">Selected size: <span className="text-[#ecba49] font-semibold">{selectedSize}</span></p>
-              )}
-            </div>
-          )}
-
-          {/* Color Selection */}
-          {product?.color && Array.isArray(product.color) && product.color.length > 0 && (
-            <div className={`transition-all duration-600 delay-600 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-              <h3 className="text-lg font-semibold mb-3 text-[#ecba49]">Select Color:</h3>
-              <div className="flex flex-wrap gap-3">
-                {product.color.map((color, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedColor(color)}
-                    className={`px-4 py-2 border-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 ${
-                      selectedColor === color
-                        ? "border-[#ecba49] bg-[#ecba49] text-black shadow-lg scale-105"
-                        : "border-[#ecba49]/50 text-[#ecba49] hover:border-[#ecba49] hover:bg-[#ecba49]/10"
-                    }`}
-                    style={{ transitionDelay: `${idx * 50}ms` }}
                   >
                     <div className="flex items-center gap-2">
-                      <div 
-                        className="w-4 h-4 rounded-full border border-gray-600"
-                        style={{ 
-                          backgroundColor: color.toLowerCase() === 'white' ? '#ffffff' : 
-                                           color.toLowerCase() === 'black' ? '#000000' :
-                                           color.toLowerCase() === 'red' ? '#ef4444' :
-                                           color.toLowerCase() === 'blue' ? '#3b82f6' :
-                                           color.toLowerCase() === 'green' ? '#22c55e' :
-                                           color.toLowerCase() === 'yellow' ? '#eab308' :
-                                           color.toLowerCase() === 'purple' ? '#a855f7' :
-                                           color.toLowerCase() === 'pink' ? '#ec4899' :
-                                           color.toLowerCase() === 'gray' ? '#6b7280' :
-                                           color.toLowerCase() === 'brown' ? '#a3685a' :
-                                           color.toLowerCase() === 'orange' ? '#f97316' :
-                                           color.toLowerCase() === 'navy' ? '#1e3a8a' :
-                                           '#ecba49'
-                        }}
-                      />
-                      {color}
+                      <span>{variant.material} - {variant.finish}</span>
+                      <span className="text-sm">₹{variant.price}</span>
                     </div>
                   </button>
                 ))}
               </div>
-              {selectedColor && (
-                <p className="text-sm text-gray-400 mt-2">Selected color: <span className="text-[#ecba49] font-semibold">{selectedColor}</span></p>
-              )}
+            </div>
+          )}
+
+          {/* Add Dimensions Section */}
+          <div className="mt-4 p-4 bg-[#1a1a1a] rounded-lg">
+            <h3 className="text-lg font-semibold mb-3">Dimensions</h3>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-gray-400">Length:</span>
+                <span className="ml-2">{product?.dimensions?.length || '—'} {product?.dimensions?.unit}</span>
+              </div>
+              <div>
+                <span className="text-gray-400">Width:</span>
+                <span className="ml-2">{product?.dimensions?.width || '—'} {product?.dimensions?.unit}</span>
+              </div>
+              <div>
+                <span className="text-gray-400">Height:</span>
+                <span className="ml-2">{product?.dimensions?.height || '—'} {product?.dimensions?.unit}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Add Sustainability Info */}
+          {(product?.ecoFriendly || product?.sustainableMaterials) && (
+            <div className="mt-4 p-4 bg-green-900/20 rounded-lg">
+              <h3 className="text-lg font-semibold mb-3 text-green-500">Sustainability</h3>
+              <div className="space-y-2">
+                {product.ecoFriendly && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-500">✓</span>
+                    <span>Eco-Friendly Product</span>
+                  </div>
+                )}
+                {product.sustainableMaterials && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-500">✓</span>
+                    <span>Made with Sustainable Materials</span>
+                  </div>
+                )}
+                {product.certifications?.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-500">✓</span>
+                    <span>Certifications: {product.certifications.join(", ")}</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

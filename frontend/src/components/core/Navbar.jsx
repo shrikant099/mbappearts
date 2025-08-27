@@ -461,7 +461,7 @@ const Navbar = () => {
           <li onClick={() => navigate('/newarrival')} className="hover:scale-105 cursor-pointer">New Arrivals</li>
           <li onClick={() => navigate('/products')} className="hover:scale-105 cursor-pointer">All Furniture</li>
           <li onClick={() => navigate('/featuredproducts')} className="hover:scale-105 cursor-pointer">Featured Products</li>
-          <li onClick={() => navigate('/customfurniture')} className="hover:scale-105 cursor-pointer">Custom Orders</li>
+         
           <li onClick={() => navigate('/onsale')} className="text-red-600 hover:scale-105 cursor-pointer font-bold">Sale</li>
         </ul>
       </div>

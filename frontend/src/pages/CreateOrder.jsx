@@ -265,7 +265,7 @@ const CreateOrder = () => {
           key: import.meta.env.VITE_RAZORPAY_KEY,
           amount: order.amount,
           currency: order.currency,
-          name: "UKF E-Commerce",
+          name: "Mbappe-Arts Furnitures",
           description: isFromCart ? `Payment for ${orderItems.length} items` : "Order payment",
           order_id: order.id,
           handler: async (response) => {

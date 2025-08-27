@@ -38,12 +38,19 @@ const CartSidebar = () => {
   
   const displayItems = cart;
 
-  const updateQuantity = (id, change) => {
-    console.log(`Update item ${id} quantity by ${change}`);
+  // Format price with Indian currency
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(price);
   };
 
-  const removeItem = (id) => {
-    console.log(`Remove item ${id}`);
+  // Calculate discount percentage
+  const calculateDiscount = (price, comparePrice) => {
+    if (!comparePrice || comparePrice <= price) return 0;
+    return Math.round(((comparePrice - price) / comparePrice) * 100);
   };
 
   return (
@@ -98,34 +105,62 @@ const CartSidebar = () => {
                 {/* Cart Items */}
                 <div className="space-y-4 mb-6">
                   {displayItems.map((item) => (
-                    <div key={item.id} className="flex gap-3 p-4 bg-gray-900 bg-opacity-70 rounded-lg border border-[#FFD700] border-opacity-20">
+                    <div key={item._id} className="flex gap-3 p-4 bg-gray-900 bg-opacity-70 rounded-lg border border-[#FFD700] border-opacity-20">
+                      {/* Product Image */}
                       <img 
-                        src={item.images?.[0]?.url} 
+                        src={item.images?.[0]?.url || '/placeholder.jpg'} 
                         alt={item.name}
                         className="w-20 h-24 object-cover rounded-md flex-shrink-0 cursor-pointer"
                         onClick={() => handleClick(item)}
                       />
                       
                       <div className="flex-1 min-w-0">
+                        {/* Product Name */}
                         <h3 
                           className="text-sm font-bold text-[#FFD700] mb-1 leading-tight cursor-pointer hover:underline"
                           onClick={() => handleClick(item)}
                         >
                           {item.name}
                         </h3>
-                        <p className="text-xs text-gray-300 mb-3">Color : {item.color}</p>
-                        <p className="text-xs text-gray-300 mb-3">Size : {item.size}</p>
+
+                        {/* Product Details */}
+                        {item.selectedVariant ? (
+                          <>
+                            <p className="text-xs text-gray-300 mb-1">
+                              Material: {item.selectedVariant.material}
+                            </p>
+                            <p className="text-xs text-gray-300 mb-2">
+                              Finish: {item.selectedVariant.finish}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            {item.material && (
+                              <p className="text-xs text-gray-300 mb-1">
+                                Material: {item.material.join(', ')}
+                              </p>
+                            )}
+                            {item.color && (
+                              <p className="text-xs text-gray-300 mb-2">
+                                Color: {item.color.join(', ')}
+                              </p>
+                            )}
+                          </>
+                        )}
                         
+                        {/* Price Section */}
                         <div className="space-y-2">
                           <div className="flex flex-col">
-                            <span className="text-[#FFD700] font-bold text-lg">₹{item.price}</span>
-                            {item.originalPrice && (
+                            <span className="text-[#FFD700] font-bold text-lg">
+                              {formatPrice(item.selectedVariant?.price || item.price)}
+                            </span>
+                            {item.comparePrice && (
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-gray-400 line-through">
-                                  ₹{item.originalPrice}
+                                  {formatPrice(item.comparePrice)}
                                 </span>
                                 <span className="text-xs text-red-400 font-semibold">
-                                  ({item.discount}% Off)
+                                  ({calculateDiscount(item.price, item.comparePrice)}% Off)
                                 </span>
                               </div>
                             )}
@@ -137,9 +172,15 @@ const CartSidebar = () => {
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  dispatch(decreaseItemQuantity(item));
+                                  if (item.quantity > 1) {
+                                    dispatch(decreaseItemQuantity(item));
+                                  }
                                 }}
-                                className="w-8 h-8 bg-[#FFD700] text-black rounded-full flex items-center justify-center text-sm font-bold hover:bg-yellow-500 transition-colors"
+                                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors
+                                  ${item.quantity > 1 
+                                    ? 'bg-[#FFD700] text-black hover:bg-yellow-500' 
+                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+                                disabled={item.quantity <= 1}
                               >
                                 <FaMinus />
                               </button>
@@ -149,9 +190,17 @@ const CartSidebar = () => {
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  dispatch(addToCart(item));
+                                  if (item.quantity < (item.stock || 10)) {
+                                    dispatch(addToCart(item));
+                                  } else {
+                                    toast.error("Maximum stock limit reached");
+                                  }
                                 }}
-                                className="w-8 h-8 bg-[#FFD700] text-black rounded-full flex items-center justify-center text-sm font-bold hover:bg-yellow-500 transition-colors"
+                                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors
+                                  ${item.quantity < (item.stock || 10)
+                                    ? 'bg-[#FFD700] text-black hover:bg-yellow-500'
+                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+                                disabled={item.quantity >= (item.stock || 10)}
                               >
                                 <FaPlus />
                               </button>
@@ -177,7 +226,7 @@ const CartSidebar = () => {
             )}
           </div>
 
-          {/* Footer - Only show if cart has items */}
+          {/* Footer with total and checkout */}
           {cart.length > 0 && (
             <div className="border-t-2 border-[#FFD700] border-opacity-50 p-4 mb-8 bg-gray-900 bg-opacity-80">
               <div className="flex justify-between items-center mb-4">
@@ -185,7 +234,7 @@ const CartSidebar = () => {
                   Subtotal ({cart.length} items)
                 </span>
                 <span className="text-2xl font-bold text-[#FFD700]">
-                  ₹{total}
+                  {formatPrice(total)}
                 </span>
               </div>
               
@@ -196,8 +245,8 @@ const CartSidebar = () => {
                 CONTINUE TO CHECKOUT
               </button>
               
-              <p className="text-center text-xs text-gray-400 mb-6 mt-2">
-                ASAP, get it now before it sells out.
+              <p className="text-center text-xs text-gray-400 mt-2">
+                Taxes and shipping calculated at checkout
               </p>
             </div>
           )}
