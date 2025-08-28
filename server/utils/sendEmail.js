@@ -57,7 +57,7 @@ export async function sendTrackingEmail(email, name, trackingId, message, courie
             </div>
             <p style="font-size: 0.95rem;">Thank you for choosing Mbappe Arts – bringing timeless furniture to your space.</p>
             <div style="text-align: center; margin-top: 24px;">
-              <a href="https://mbappearts.com" style="display: inline-block; background: #d4a373; color: #fff; text-decoration: none; padding: 10px 28px; border-radius: 5px; font-weight: 600;">Visit Our Website</a>
+              <a href="https://mbappe-arts.vercel.app/" style="display: inline-block; background: #d4a373; color: #fff; text-decoration: none; padding: 10px 28px; border-radius: 5px; font-weight: 600;">Visit Our Website</a>
             </div>
           </div>
         </div>
@@ -144,7 +144,7 @@ export async function sendOrderConfirmationEmail(data) {
     <p>We appreciate your business and hope our furniture brings elegance to your space 🛋️</p>
 
     <p style="margin-top: 30px;">Warm regards,<br><b>Team Mbappe Arts</b></p>
-    <p><a href="https://mbappearts.com" style="color: #d4a373;">Visit Our Website</a></p>
+    <p><a href="https://mbappe-arts.vercel.app/" style="color: #d4a373;">Visit Our Website</a></p>
   </div>
   `;
 
