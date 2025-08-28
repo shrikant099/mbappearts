@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-hot-toast";
+import html2pdf from "html2pdf.js";
 import { apiConnector } from "../services/apiConnector";
 import { endpoints, orderEndpoints } from "../services/api";
 import {
@@ -420,36 +421,262 @@ const Profile = () => {
   };
 
   const token = useSelector((state) => state.auth.token);
-const receiptHandler = async (id) => {
-  try {
-    const res = await apiConnector(
-      "GET",
-      `${printReceipt}${id}/receipt`,
-      null,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: "blob",   // 👈 ensures raw PDF
-      }
-    );
+// const receiptHandler = async (id) => {
+//   try {
+//     console.log(selectedOrder)
+//     const res = await apiConnector(
+//       "GET",
+//       `${printReceipt}${id}/receipt`,
+//       null,
+//       {
+//         headers: { Authorization: `Bearer ${token}` },
+//         responseType: "blob",   // 👈 ensures raw PDF
+//       }
+//     );
 
-    const pdfBlob = new Blob([res.data], { type: "application/pdf" });
-    const pdfUrl = window.URL.createObjectURL(pdfBlob);
+//     const pdfBlob = new Blob([res.data], { type: "application/pdf" });
+//     const pdfUrl = window.URL.createObjectURL(pdfBlob);
 
-    // Download
-    const link = document.createElement("a");
-    link.href = pdfUrl;
-    link.setAttribute("download", `receipt-${id}.pdf`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+//     // Download
+//     const link = document.createElement("a");
+//     link.href = pdfUrl;
+//     link.setAttribute("download", `receipt-${id}.pdf`);
+//     document.body.appendChild(link);
+//     link.click();
+//     link.remove();
 
-    // OR: open in new tab
-    // window.open(pdfUrl, "_blank");
-  } catch (error) {
-    console.error(error);
-    toast.error("Unable to print receipt.");
-  }
+//     // OR: open in new tab
+//     // window.open(pdfUrl, "_blank");
+//   } catch (error) {
+//     console.error(error);
+//     toast.error("Unable to print receipt.");
+//   }
+// };
+
+
+
+ // If using module bundler
+
+
+const downloadReceiptAsPDF = (order) => {
+  const createReceiptHTML = (order) => {
+    const formatDate = (date) => new Date(date).toLocaleDateString('en-IN', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    });
+
+    const formatCurrency = (amount) => `₹${(parseFloat(amount) || 0).toFixed(2)}`;
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+            padding: 10px;
+          }
+          .container {
+              width: 210mm;   /* A4 width */
+              min-height: 297mm; /* A4 height */
+              margin: auto;
+              padding: 15mm;  /* add padding for breathing space */
+              background: #fff;
+              box-shadow: 0 0 3px rgba(0,0,0,0.2);
+            }
+
+          .header, .footer {
+            text-align: center;
+            margin-bottom: 10px;
+          }
+          .header h1 { font-size: 18px; color: #2c3e50; }
+          .header p, .footer p { font-size: 10px; }
+          .invoice-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #e74c3c;
+          }
+          .info-grid {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+          }
+          .section { width: 48%; }
+          .section-title {
+            font-weight: bold;
+            font-size: 12px;
+            color: #2c3e50;
+            border-bottom: 1px solid #3498db;
+            margin-bottom: 6px;
+          }
+          .info-row { margin-bottom: 4px; }
+          .info-label { font-weight: bold; display: inline-block; width: 100px; }
+          .shipping-address {
+            font-size: 11px;
+            background: #f2f2f2;
+            padding: 8px;
+            border-left: 3px solid #3498db;
+            margin-bottom: 10px;
+          }
+         
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin-top: 10px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: center;
+          }
+          th {
+            background: #3498db;
+            color: #fff;
+            font-size: 11px;
+          }
+               table {
+              width: 100%;
+              table-layout: fixed;
+            }
+            th, td {
+              word-wrap: break-word;
+            }
+          .totals {
+            margin-top: 10px;
+            width: 100%;
+            font-size: 11px;
+            float: right;
+          }
+          .totals .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+          }
+          .final-total {
+            font-size: 14px;
+            font-weight: bold;
+            color: #e74c3c;
+            border-top: 1px solid #e74c3c;
+            margin-top: 6px;
+            padding-top: 6px;
+          }
+          @media print {
+            body { zoom: 0.8; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎨 Mbappe Arts</h1>
+            <p>VIKASH NAGAR, CHURU, Rajasthan – 331403</p>
+            <p>Email: tmbapearts@gmail.com | Phone: 9694520525</p>
+          </div>
+
+          <div class="invoice-title">📋 INVOICE</div>
+
+          <div class="info-grid">
+            <div class="section">
+              <div class="section-title">Order Info</div>
+              <div class="info-row"><span class="info-label">Order ID:</span> ${order.orderId}</div>
+              <div class="info-row"><span class="info-label">Order Date:</span> ${formatDate(order.createdAt)}</div>
+              <div class="info-row"><span class="info-label">Payment:</span> ${order.paymentMethod} - ${order.paymentStatus}</div>
+            </div>
+            <div class="section">
+              <div class="section-title">Customer</div>
+              <div class="info-row"><span class="info-label">Name:</span> ${order.shippingAddress?.recipientName || 'N/A'}</div>
+              <div class="info-row"><span class="info-label">Phone:</span> ${order.shippingAddress?.phone || 'N/A'}</div>
+            </div>
+          </div>
+
+          <div class="shipping-address">
+            ${order.shippingAddress?.street || ''}, ${order.shippingAddress?.city || ''}, ${order.shippingAddress?.state || ''}<br>
+            Pincode: ${order.shippingAddress?.postalCode || ''} ${order.shippingAddress?.landmark ? ` | Landmark: ${order.shippingAddress.landmark}` : ''}
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Size</th>
+                <th>Color</th>
+                <th>Qty</th>
+                <th>Unit</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${order.items.map(item => {
+                const qty = parseInt(item.quantity) || 0;
+                const price = parseFloat(item.price) || 0;
+                const total = qty * price;
+                return `
+                  <tr>
+                    <td>${item.name}</td>
+                    <td>${item.size}</td>
+                    <td>${item.color}</td>
+                    <td>${qty}</td>
+                    <td>${formatCurrency(price)}</td>
+                    <td>${formatCurrency(total)}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div class="total-row"><span>Subtotal:</span><span>${formatCurrency(order.subtotal)}</span></div>
+            <div class="total-row"><span>Shipping:</span><span>${formatCurrency(order.shippingFee)}</span></div>
+            <div class="total-row"><span>Tax:</span><span>${formatCurrency(order.tax)}</span></div>
+            ${order.discount > 0 ? `<div class="total-row"><span>Discount:</span><span>- ${formatCurrency(order.discount)}</span></div>` : ''}
+            <div class="total-row final-total"><span>Total:</span><span>${formatCurrency(order.total)}</span></div>
+          </div>
+
+          <div class="footer">
+            <p>🙏 Thank you for shopping with Mbappe Arts!</p>
+            <p>This is a computer-generated invoice.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  const html = createReceiptHTML(order);
+
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = html;
+  wrapper.style.display = "none";
+  document.body.appendChild(wrapper);
+
+  const element = wrapper.querySelector(".container");
+
+  const options = {
+    margin: 0,
+    filename: `receipt-${order.orderId || order._id}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      dpi: 192,
+      letterRendering: true
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(options).from(element).save().then(() => {
+    document.body.removeChild(wrapper);
+  });
 };
+
+
 
 
 
@@ -1233,7 +1460,8 @@ const receiptHandler = async (id) => {
           >
             Need help? Contact our support team
           </div>
-          <div onClick={()=>receiptHandler(selectedOrder._id)} className="flex items-center cursor-pointer gap-2 px-4 py-2 border mr-2 border-blue-500 text-blue-500 rounded-lg hover:bg-blue-500 hover:text-white transition-all duration-300 hover:scale-105">
+          <div onClick={() => downloadReceiptAsPDF(selectedOrder)}
+           className="flex items-center cursor-pointer gap-2 px-4 py-2 border mr-2 border-blue-500 text-blue-500 rounded-lg hover:bg-blue-500 hover:text-white transition-all duration-300 hover:scale-105">
                   Download Receipt
           </div>
           <div className="flex gap-3">
