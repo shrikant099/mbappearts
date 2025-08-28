@@ -20,7 +20,7 @@ import { apiConnector } from "../services/apiConnector";
 import video from "../assets/images/3770034-hd_1920_1080_25fps.mp4"
 
 const { topReview } = reviewEndpoints;
-const { getAllCategory } = categoryEndpoints; // Add this to your API endpoints
+const { getAllCategory } = categoryEndpoints;
 
 // Fallback images for categories
 const categoryImages = {
@@ -28,9 +28,9 @@ const categoryImages = {
   bed: "https://www.nilkamalfurniture.com/cdn/shop/files/Mozart_16721e45-a1b5-4c99-907a-8fc634c73955.webp?v=1753176850",
   dining: "https://ik.imagekit.io/2xkwa8s1i/img/WDINEKOPRS6COPCBSWR1/0.jpg?tr=w-3840",
   chair: "https://ikiru.in/cdn/shop/files/buy-dining-chair-acme-curve-wood-and-grey-upholstery-dining-chair-set-of-2-or-chairs-for-dining-room-and-home-by-orange-tree-on-ikiru-online-store-1.jpg?v=1739208850",
-  desk: "https://ergosphere.in/wp-content/uploads/2022/05/BD390-Teak-Render-Grey-UCurve.png",
-  storage: "https://www.aboutspace.in/cdn/shop/files/51dKDTVDesL.jpg?v=1723610704",
-  table: "https://media.designcafe.com/wp-content/uploads/2021/04/15173304/trending-sofa-designs-for-your-home.jpg",
+  table: "https://ergosphere.in/wp-content/uploads/2022/05/BD390-Teak-Render-Grey-UCurve.png",
+  almirah: "https://www.aboutspace.in/cdn/shop/files/51dKDTVDesL.jpg?v=1723610704",
+  bench: "https://media.designcafe.com/wp-content/uploads/2021/04/15173304/trending-sofa-designs-for-your-home.jpg",
   default: "https://via.placeholder.com/400x600/1f2937/ffffff?text=Category"
 };
 
@@ -61,15 +61,13 @@ const Home = () => {
     }
   }
 
- 
-
   // Fetch categories from database
   const fetchCategories = async () => {
     try {
       const response = await apiConnector("GET", getAllCategory);
-
-      console.log(response)
-      const fetchedCategories = response?.data?.categories || [];
+      console.log("Categories response:", response);
+      
+      const fetchedCategories = response?.data || [];
       
       // Filter active categories and add fallback images
       const activeCategories = fetchedCategories
@@ -89,6 +87,7 @@ const Home = () => {
           };
         });
       
+      console.log("Processed categories:", activeCategories);
       setCategories(activeCategories);
     } catch (error) {
       console.log("Error fetching categories:", error);
@@ -106,32 +105,44 @@ const Home = () => {
     fetchCategories();
   }, [dispatch]);
 
-  // Handle category click
+  // Handle category click - FIXED for server-side filtering
   const handleCategoryClick = (category) => {
+    console.log("Category clicked:", category);
     dispatch(clearFilters()); // Clear existing filters first
+    
+    // Use category ID for server-side filtering
     dispatch(updateFilter({
-      type: "category", // Changed from "categories" to match filterSlice
-      value: category._id,
+      type: "category",
+      value: category._id || category.id, // Use the database ID
       checked: true
     }));
+    
+    console.log("Navigating to products with category filter:", category._id || category.id);
     navigate("/products");
   };
 
-  // Handle room type filtering
+  // Handle room type filtering - FIXED for server-side filtering
   const handleRoomTypeClick = (roomType) => {
+    console.log("Room type clicked:", roomType);
     dispatch(clearFilters()); // Clear existing filters first
+    
+    // Room type is stored as an array in products, so we pass it as an array
     dispatch(updateFilter({
       type: "roomType",
-      value: roomType,
+      value: [roomType], // Pass as array to match backend expectations
       checked: true
     }));
+    
+    console.log("Navigating to products with roomType filter:", roomType);
     navigate("/products");
   };
 
-  const handleShopNowClick = () => navigate("/products");
-  const handleLearnMoreClick = () => navigate("/about");
-
+  const handleShopNowClick = () => {
+    dispatch(clearFilters()); // Clear any existing filters
+    navigate("/products");
+  };
   
+  const handleLearnMoreClick = () => navigate("/about");
 
   // Fallback category data if database fetch fails
   const fallbackCategoryData = useMemo(() => [
@@ -139,8 +150,7 @@ const Home = () => {
     { name: "Beds", image: categoryImages.bed, _id: "fallback-bed", key: "bed" },
     { name: "Dining Tables", image: categoryImages.dining, _id: "fallback-dining", key: "dining" },
     { name: "Chairs", image: categoryImages.chair, _id: "fallback-chair", key: "chair" },
-    { name: "Desks", image: categoryImages.desk, _id: "fallback-desk", key: "desk" },
-    { name: "Storage", image: categoryImages.storage, _id: "fallback-storage", key: "storage" },
+   
   ], []);
 
   // Use fetched categories or fallback
@@ -154,7 +164,7 @@ const Home = () => {
       buttonText: "Discover Sofas & More",
       icon: Sparkles,
       key: "livingroom",
-      roomType: "Living Room" // Matches Product model enum
+      roomType: "Living Room" // Must match exactly with your Product model enum
     },
     {
       image: featuredImages.bedroom,
@@ -162,7 +172,7 @@ const Home = () => {
       buttonText: "Explore Beds",
       icon: Star,
       key: "bedroom",
-      roomType: "Bedroom" // Matches Product model enum
+      roomType: "Bedroom" // Must match exactly with your Product model enum
     },
     {
       image: featuredImages.workspace,
@@ -170,7 +180,7 @@ const Home = () => {
       buttonText: "Shop Desks & Chairs",
       icon: Heart,
       key: "workspace",
-      roomType: "Office" // Matches Product model enum
+      roomType: "Office" // Must match exactly with your Product model enum
     },
   ], []);
 
@@ -289,51 +299,9 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Shop By Category */}
-      <div className="py-16 lg:py-24 px-6 relative bg-gradient-to-b from-black to-gray-900">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl lg:text-6xl font-black mb-6 bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">
-            Shop By Category
-          </h2>
-          <div className="w-24 h-1 bg-gradient-to-r from-yellow-400 to-yellow-600 mx-auto rounded-full animate-pulse" />
-        </div>
-        
-        {loading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 lg:gap-6 max-w-7xl mx-auto">
-            {Array(6).fill(0).map((_, index) => (
-              <div key={index} className="aspect-[3/4] bg-gray-800 animate-pulse rounded-3xl" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 lg:gap-6 max-w-7xl mx-auto">
-            {displayCategories.map((category, index) => (
-              <div
-                key={category._id || category.key}
-                className="group cursor-pointer transition-all duration-700 hover:scale-110 hover:-translate-y-6 hover:shadow-2xl hover:shadow-yellow-400/25"
-                onClick={() => handleCategoryClick(category)}
-              >
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-400 to-yellow-600 p-1 shadow-2xl hover:shadow-yellow-400/50">
-                  <div className="relative bg-black rounded-3xl overflow-hidden aspect-[3/4]">
-                    <ImageWithFallback
-                      src={category.image}
-                      alt={category.name}
-                      imageKey={category._id || category.key}
-                      className="w-full h-full"
-                    />
-                  </div>
-                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center">
-                    <h3 className="text-white font-bold text-lg lg:text-xl drop-shadow-2xl group-hover:text-yellow-300">
-                      {category.name}
-                    </h3>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+     
 
-      {/* Featured Sections */}
+      {/* Featured Sections - FIXED for server-side filtering */}
       <div className="py-16 lg:py-24 px-6 bg-gradient-to-b from-gray-900 to-black relative">
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-6xl font-black mb-6 bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">

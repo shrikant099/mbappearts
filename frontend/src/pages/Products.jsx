@@ -157,9 +157,8 @@ const Products = () => {
     }
   };
 
-  // Initial load
+  // Initial load and animations
   useEffect(() => {
-    getAllProducts(1, true);
     // Initial animations
     setTimeout(() => setIsVisible(true), 100);
     setTimeout(() => setAnimateFilters(true), 300);
@@ -173,11 +172,9 @@ const Products = () => {
     };
   }, []);
 
-  // Handle page changes
+  // FIXED: Handle page changes - ALWAYS fetch when page changes
   useEffect(() => {
-    if (currentPage > 1) {
-      getAllProducts(currentPage, false);
-    }
+    getAllProducts(currentPage, false);
   }, [currentPage]);
 
   // Check if filters are empty
@@ -211,8 +208,7 @@ const Products = () => {
     // Debounce the filtering
     filterTimeoutRef.current = setTimeout(() => {
       console.log("Filters changed, fetching new results...");
-      setCurrentPage(1); // Reset to first page
-      getAllProducts(1, false); // Fetch with new filters
+      setCurrentPage(1); // Reset to first page - this will trigger the page useEffect
     }, 500); // 500ms debounce delay for filters
 
     // Cleanup function
@@ -239,7 +235,7 @@ const Products = () => {
             <div className="h-1 bg-gradient-to-r from-[#FFD700] to-transparent mt-2 transform origin-left transition-transform duration-500 scale-x-0 group-hover:scale-x-100"></div>
           </h1>
 
-          {/* Debug Info - Remove in production */}
+          {/* Product Info */}
           <div className="text-xs text-gray-500">
             <div>Total: {totalProducts} | Page: {currentPage}/{totalPages}</div>
             {filters.category && (

@@ -17,12 +17,21 @@ const { getAllBrands } = brandEndpoints;
 const AddProduct = () => {
   const dispatch = useDispatch();
   const loading = useSelector((state) => state.auth.loading);
-  const token = useSelector(state => state.auth.token)
+  const token = useSelector(state => state.auth.token);
 
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
-  const [filtered, setFiltered] = useState([]);
+  const [brands, setBrands] = useState([]);
+
+  // Server-side pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage] = useState(10);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Search/filter state
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -99,7 +108,10 @@ const AddProduct = () => {
     price: "Price",
     stock: "Stock",
     category: "Category",
-    color: "Color" // Array field - at least one color required
+    color: "Color",
+    // Array field - at least one color required
+    costPerItem : "Cost Per Item",
+    comparePrice : "Compare Price",
   };
 
   // Validation function
@@ -199,25 +211,6 @@ const AddProduct = () => {
     }
   };
 
-  const getAllProducts = async () => {
-    try {
-      dispatch(setLoading(true));
-      const res = await apiConnector("GET", getAllProduct,null,{
-        Authorization : `Bearer ${token}`
-      });
-      console.log("Products fetched :", res);
-      setProducts(res.data.products);
-      setFiltered(res.data.products);
-      toast.success("Products loaded!");
-    } catch {
-      toast.error("Unable to fetch products");
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
-  
-  const [brands, setBrands] = useState([]);
-
   const fetchBrands = async () => {
     try {
       dispatch(setLoading(true));
@@ -233,23 +226,88 @@ const AddProduct = () => {
     }
   };
 
+  // Fetch products with server-side pagination
+  const fetchProducts = async (page = 1, limit = productsPerPage) => {
+    try {
+      dispatch(setLoading(true));
+      let query = `?page=${page}&limit=${limit}`;
+      if (searchTerm.trim()) query += `&search=${encodeURIComponent(searchTerm.trim())}`;
+      if (statusFilter) query += `&status=${statusFilter}`;
+      query += `&sort=createdAt:desc`;
+
+      const res = await apiConnector(
+        "GET", getAllProduct + query, null, {Authorization : `Bearer ${token}`}
+      );
+      
+      console.log("Products fetched:", res);
+      
+      if (res.data.success) {
+        setProducts(res.data.products || []);
+        setTotalProducts(res.data.total || 0);
+        setTotalPages(res.data.pages || 1);
+        setCurrentPage(res.data.page || 1);
+        
+      } else {
+        throw new Error(res.data.message || "Failed to fetch products");
+      }
+    } catch (err) {
+      console.error("Error fetching products:", err);
+      toast.error("Unable to fetch products");
+      setProducts([]);
+      setTotalProducts(0);
+      setTotalPages(1);
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  // Pagination Controls Component
+  const PaginationControls = () => (
+    totalPages > 1 ? (
+      <div className="flex justify-center items-center my-6 gap-2 flex-wrap">
+        {currentPage > 1 && (
+          <button
+            onClick={() => setCurrentPage(currentPage - 1)}
+            className="px-3 py-1 rounded border border-[#FFD770] hover:bg-[#FFD770] hover:text-black transition"
+          >
+            ←
+          </button>
+        )}
+        {[...Array(totalPages)].map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrentPage(i + 1)}
+            className={`px-3 py-1 rounded border ${
+              currentPage === i + 1
+                ? "bg-[#FFD770] text-black font-bold shadow border-[#FFD770]"
+                : "border-[#FFD770] hover:bg-[#FFD770] hover:text-black"
+            }`}
+          >
+            {i + 1}
+          </button>
+        ))}
+        {currentPage < totalPages && (
+          <button
+            onClick={() => setCurrentPage(currentPage + 1)}
+            className="px-3 py-1 rounded border border-[#FFD770] hover:bg-[#FFD770] hover:text-black transition"
+          >
+            →
+          </button>
+        )}
+      </div>
+    ) : null
+  );
+
   useEffect(() => {
     getAllCategories();
-    getAllProducts();
     fetchBrands();
   }, []);
 
+  // Fetch products when page, search, or status changes
   useEffect(() => {
-    const term = searchTerm.toLowerCase();
-    if (Array.isArray(products)) {
-      const filteredProducts = products.filter((prod) =>
-        `${prod.name} ${prod.stock} ${prod.sold} ${prod.category?.name} ${prod.brand?.name}`
-          .toLowerCase()
-          .includes(term)
-      );
-      setFiltered(filteredProducts);
-    }
-  }, [searchTerm, products]);
+    fetchProducts(currentPage, productsPerPage);
+    // eslint-disable-next-line
+  }, [currentPage, productsPerPage, searchTerm, statusFilter]);
 
   const handleSingleImageChange = (e, index) => {
     const file = e.target.files[0];
@@ -286,7 +344,7 @@ const AddProduct = () => {
       });
       if (res.data.success) {
         toast.success("Product deleted successfully!");
-        getAllProducts();
+        fetchProducts(currentPage, productsPerPage); // Refetch current page
       } else {
         toast.error("Deletion failed");
       }
@@ -434,7 +492,7 @@ const AddProduct = () => {
       setShowAddModal(false);
       setShowEditModal(false);
       resetForm();
-      getAllProducts();
+      fetchProducts(currentPage, productsPerPage); // Refetch current page
     } catch (err) {
       console.log(err);
       toast.error(err.message || "Operation failed!");
@@ -578,13 +636,36 @@ const AddProduct = () => {
         </button>
       </div>
 
-      <input
-        type="text"
-        placeholder="Search by name, category, brand..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="mb-4 w-full p-3 border rounded text-sm"
-      />
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <input
+          type="text"
+          placeholder="Search by name"
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1); // Reset to first page on search
+          }}
+          className="w-full sm:w-[350px] p-3 border rounded text-sm"
+        />
+        <select
+          value={statusFilter}
+          onChange={e => {
+            setStatusFilter(e.target.value);
+            setCurrentPage(1); // Reset to first page on filter
+          }}
+          className="p-3 border rounded text-sm"
+        >
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+
+      {/* Product Count Info */}
+      <div className="text-right text-xs text-gray-600 mb-4">
+        Showing {products.length} of {totalProducts} products 
+        {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
+      </div>
 
       {loading ? (
         <div className="w-full h-[50vh] flex justify-center items-center">
@@ -608,10 +689,10 @@ const AddProduct = () => {
                 </tr>
               </thead>
               <tbody>
-                {Array.isArray(filtered) && filtered.length > 0 ? (
-                  filtered.map((prod, idx) => (
+                {Array.isArray(products) && products.length > 0 ? (
+                  products.map((prod, idx) => (
                     <tr key={prod._id} className="border-t">
-                      <td className="px-4 py-2">{idx + 1}</td>
+                      <td className="px-4 py-2">{(currentPage - 1) * productsPerPage + idx + 1}</td>
                       <td className="px-4 py-2">{prod.name}</td>
                       <td className="px-4 py-2">₹{prod.price}</td>
                       <td className="px-4 py-2">{prod.stock}</td>
@@ -645,15 +726,20 @@ const AddProduct = () => {
             </table>
           </div>
 
+          {/* Pagination Controls for Desktop */}
+          {/* <PaginationControls /> */}
+
           {/* Mobile Card View */}
           <div className="lg:hidden space-y-4">
-            {Array.isArray(filtered) && filtered.length > 0 ? (
-              filtered.map((prod, idx) => (
+            {Array.isArray(products) && products.length > 0 ? (
+              products.map((prod, idx) => (
                 <div key={prod._id} className="bg-white rounded-lg shadow-lg p-4 border">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs bg-gray-100 px-2 py-1 rounded">#{idx + 1}</span>
+                        <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                          #{(currentPage - 1) * productsPerPage + idx + 1}
+                        </span>
                         <span className={`text-xs px-2 py-1 rounded capitalize ${
                           prod.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
@@ -702,6 +788,9 @@ const AddProduct = () => {
               </div>
             )}
           </div>
+
+          {/* Pagination Controls for Mobile */}
+          <PaginationControls />
         </>
       )}
 
@@ -719,7 +808,6 @@ const AddProduct = () => {
                 <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Basic Information</h4>
               </div>
               
-              {/* Required Text Inputs */}
               {/* Name - Required */}
               <div>
                 {renderFieldLabel('name', 'Product Name', true)}
@@ -729,11 +817,11 @@ const AddProduct = () => {
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   className={`w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm sm:text-base ${
-                    validationErrors.stock ? 'border-red-500' : 'border-[#FFD770]/40 focus:border-[#FFD770]/80'
+                    validationErrors.name ? 'border-red-500' : 'border-[#FFD770]/40 focus:border-[#FFD770]/80'
                   }`}
                 />
-                {validationErrors.stock && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.stock}</p>
+                {validationErrors.name && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.name}</p>
                 )}
               </div>
 
@@ -746,37 +834,71 @@ const AddProduct = () => {
                 className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
               />
               
+              {/* Price - Required */}
+              <div>
+                {renderFieldLabel('price', 'Price', true)}
                 <input
-                type="number"
-                placeholder="Price (required)"
-                value={formData.price}
-                onChange={(e) => handleInputChange('price', e.target.value)}
-                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-red-600/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
-              />
+                  type="number"
+                  placeholder="Price"
+                  value={formData.price}
+                  onChange={(e) => handleInputChange('price', e.target.value)}
+                  className={`w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm sm:text-base ${
+                    validationErrors.price ? 'border-red-500' : 'border-[#FFD770]/40 focus:border-[#FFD770]/80'
+                  }`}
+                />
+                {validationErrors.price && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.price}</p>
+                )}
+              </div>
 
+              
+              
+              <div>
+                {renderFieldLabel('comparePrice', 'Compare Price', true)}
               <input
                 type="number"
-                placeholder="Compare Price"
+                placeholder="Compare Price  "
                 value={formData.comparePrice}
                 onChange={(e) => handleInputChange('comparePrice', e.target.value)}
-                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+                className="w-full px-3 lg:h-[50px]  py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
               />
-              
+                {validationErrors.comaprePrice && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.comaprePrice}</p>
+                )}
+              </div>
+
+              <div>
+                {renderFieldLabel('costPerItem', 'Cost Per Item', true)}
               <input
                 type="number"
-                placeholder="Cost Per Item"
+                placeholder="Cost Per Item "
                 value={formData.costPerItem}
                 onChange={(e) => handleInputChange('costPerItem', e.target.value)}
-                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+                className="w-full px-3 lg:h-[50px]  py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
               />
+                {validationErrors.costPerItem && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.costPerItem}</p>
+                )}
+              </div>
+              
+              
 
-               <input
-                type="number"
-                placeholder="Stock(required)"
-                value={formData.stock}
-                onChange={(e) => handleInputChange('stock', e.target.value)}
-                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-red-700/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
-              />
+              {/* Stock - Required */}
+              <div>
+                {renderFieldLabel('stock', 'Stock', true)}
+                <input
+                  type="number"
+                  placeholder="Stock"
+                  value={formData.stock}
+                  onChange={(e) => handleInputChange('stock', e.target.value)}
+                  className={`w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm sm:text-base ${
+                    validationErrors.stock ? 'border-red-500' : 'border-[#FFD770]/40 focus:border-[#FFD770]/80'
+                  }`}
+                />
+                {validationErrors.stock && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.stock}</p>
+                )}
+              </div>
               
               <input
                 type="number"
@@ -819,7 +941,7 @@ const AddProduct = () => {
               <select
                 value={formData.brand}
                 onChange={(e) => handleInputChange('brand', e.target.value)}
-                className="w-full px-3 g:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm sm:text-base"
+                className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm sm:text-base"
               >
                 <option className="bg-black" value="">Select Brand</option>
                 {brands.map((b) => (
@@ -1309,8 +1431,6 @@ const AddProduct = () => {
                   className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md text-sm"
                 />
               </div>
-              
-              
               
               {/* Dimension Diagram */}
               <div className="mb-4">
