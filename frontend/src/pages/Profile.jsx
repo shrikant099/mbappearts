@@ -588,6 +588,7 @@ const downloadReceiptAsPDF = (order) => {
               <div class="info-row"><span class="info-label">Order ID:</span> ${order.orderId}</div>
               <div class="info-row"><span class="info-label">Order Date:</span> ${formatDate(order.createdAt)}</div>
               <div class="info-row"><span class="info-label">Payment:</span> ${order.paymentMethod} - ${order.paymentStatus}</div>
+              <div class="info-row"><span class="info-label">Current Status:</span> ${selectedOrder.currentStatus}</div>
             </div>
             <div class="section">
               <div class="section-title">Customer</div>
