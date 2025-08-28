@@ -187,8 +187,6 @@ export const getCart = async (req, res) => {
             }
           : null,
         quantity: item.quantity,
-        size: item.size,        // Fixed: Added this line
-        color: item.color,      // Fixed: Added this line
         addedAt: item.addedAt,
       };
     });
