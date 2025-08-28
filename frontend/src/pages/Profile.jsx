@@ -420,23 +420,39 @@ const Profile = () => {
   };
 
   const token = useSelector((state) => state.auth.token);
+const receiptHandler = async (id) => {
+  try {
+    const res = await apiConnector(
+      "GET",
+      `${printReceipt}${id}/receipt`,
+      null,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: "blob",   // 👈 ensures raw PDF
+      }
+    );
 
-   const receiptHandler = async (id) => {
-    try{
-      
-      const res = await apiConnector("GET",printReceipt + id + '/receipt',null,{
-        Authorization : `Bearer ${token}`
-      });
+    const pdfBlob = new Blob([res.data], { type: "application/pdf" });
+    const pdfUrl = window.URL.createObjectURL(pdfBlob);
 
-      console.log(res);
+    // Download
+    const link = document.createElement("a");
+    link.href = pdfUrl;
+    link.setAttribute("download", `receipt-${id}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 
-      
-
-    }catch(error){
-      console.log(error);
-      toast.error('Unable to print receipt.')
-    }
+    // OR: open in new tab
+    // window.open(pdfUrl, "_blank");
+  } catch (error) {
+    console.error(error);
+    toast.error("Unable to print receipt.");
   }
+};
+
+
+
 
   // Updated fetchOrders with pagination
   const fetchOrders = async (page = 1, limit = 10, status = '') => {
