@@ -76,6 +76,7 @@ const Navbar = () => {
       
     } finally {
       setIsSavingCart(false);
+      
     }
   };
 
