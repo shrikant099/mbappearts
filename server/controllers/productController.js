@@ -16,7 +16,7 @@ const buildFilters = (query) => {
   
   // Category filter
   if (query.category) {
-    filters.category = mongoose.Types.ObjectId(query.category);
+    filters.category = new mongoose.Types.ObjectId(query.category);
   }
   
   // Room type filter
@@ -76,6 +76,7 @@ const buildFilters = (query) => {
   
   return filters;
 };
+
 
 // Create a new furniture product
 export const createProduct = async (req, res) => {
