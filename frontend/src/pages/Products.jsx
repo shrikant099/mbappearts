@@ -13,7 +13,8 @@ const Products = () => {
   const dispatch = useDispatch();
 
   const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
   const [isVisible, setIsVisible] = useState(false);
   const [showProducts, setShowProducts] = useState(false);
@@ -21,46 +22,163 @@ const Products = () => {
   const [isFiltering, setIsFiltering] = useState(false);
   const productsPerPage = 20;
 
-  // Debounce timer ref to prevent excessive filtering
+  // Debounce timer ref to prevent excessive API calls
   const filterTimeoutRef = useRef(null);
+  const abortControllerRef = useRef(null);
 
   const loading = useSelector((state) => state.auth.loading);
   const filters = useSelector((state) => state.filters);
   const search = useSelector((state) => state.filters.searchQuery);
-
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * productsPerPage,
-    currentPage * productsPerPage
-  );
-
-  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
 
   const handlePageChange = (pageNum) => {
     setCurrentPage(pageNum);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const getAllProducts = async () => {
+  // Build query parameters for API call
+  const buildQueryParams = (page = 1) => {
+    const params = new URLSearchParams();
+    
+    // Pagination
+    params.append('page', page.toString());
+    params.append('limit', productsPerPage.toString());
+    
+    // Search
+    if (search && search.trim()) {
+      params.append('search', search.trim());
+    }
+    
+    // Category filters
+    if (filters.category) {
+      params.append('category', filters.category);
+    }
+    
+    if (filters.subCategory) {
+      params.append('subCategory', filters.subCategory);
+    }
+    
+    // Array filters
+    if (filters.roomType && filters.roomType.length > 0) {
+      filters.roomType.forEach(room => params.append('roomType', room));
+    }
+    
+    if (filters.style && filters.style.length > 0) {
+      filters.style.forEach(style => params.append('style', style));
+    }
+    
+    if (filters.material && filters.material.length > 0) {
+      filters.material.forEach(material => params.append('material', material));
+    }
+    
+    if (filters.color && filters.color.length > 0) {
+      filters.color.forEach(color => params.append('color', color));
+    }
+    
+    // Price range
+    if (filters.priceRange && 
+        (filters.priceRange.min > 0 || filters.priceRange.max < 100000)) {
+      params.append('minPrice', filters.priceRange.min.toString());
+      params.append('maxPrice', filters.priceRange.max.toString());
+    }
+    
+    // Boolean filters
+    if (filters.ecoFriendly) {
+      params.append('ecoFriendly', 'true');
+    }
+    
+    if (filters.assemblyRequired !== null) {
+      params.append('assemblyRequired', filters.assemblyRequired.toString());
+    }
+    
+    if (filters.freeShipping) {
+      params.append('freeShipping', 'true');
+    }
+    
+    // Default sorting
+    params.append('sort', 'createdAt:desc');
+    
+    return params.toString();
+  };
+
+  const getAllProducts = async (page = 1, showLoadingIndicator = true) => {
     try {
-      dispatch(setLoading(true));
-      const res = await apiConnector("GET", getAllProduct);
-      console.log("these are the products :", res);
-      setProducts(res.data.products || []);
-      toast.success("Products loaded!");
-    } catch {
+      // Cancel previous request if it exists
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // Create new abort controller
+      abortControllerRef.current = new AbortController();
+      
+      if (showLoadingIndicator) {
+        dispatch(setLoading(true));
+      } else {
+        setIsFiltering(true);
+      }
+      
+      const queryParams = buildQueryParams(page);
+      const url = `${getAllProduct}?${queryParams}`;
+      
+      console.log("Fetching products with URL:", url);
+      
+      const res = await apiConnector("GET", url, null, null, null, {
+        signal: abortControllerRef.current.signal
+      });
+      
+      console.log("API Response:", res.data);
+      
+      if (res.data.success) {
+        setProducts(res.data.products || []);
+        setTotalProducts(res.data.total || 0);
+        setTotalPages(res.data.pages || 1);
+        setCurrentPage(res.data.page || 1);
+        
+        if (showLoadingIndicator) {
+          toast.success(`Loaded ${res.data.products?.length || 0} products!`);
+        }
+      } else {
+        throw new Error(res.data.message || "Failed to fetch products");
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.log("Request was cancelled");
+        return;
+      }
+      
+      console.error("Error fetching products:", error);
       toast.error("Unable to fetch products");
+      setProducts([]);
+      setTotalProducts(0);
+      setTotalPages(1);
     } finally {
       dispatch(setLoading(false));
+      setIsFiltering(false);
+      abortControllerRef.current = null;
     }
   };
 
+  // Initial load
   useEffect(() => {
-    getAllProducts();
+    getAllProducts(1, true);
     // Initial animations
     setTimeout(() => setIsVisible(true), 100);
     setTimeout(() => setAnimateFilters(true), 300);
     setTimeout(() => setShowProducts(true), 500);
+    
+    // Cleanup function
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
+
+  // Handle page changes
+  useEffect(() => {
+    if (currentPage > 1) {
+      getAllProducts(currentPage, false);
+    }
+  }, [currentPage]);
 
   // Check if filters are empty
   const areFiltersEmpty = () => {
@@ -73,14 +191,14 @@ const Products = () => {
       (!filters.color || filters.color.length === 0) &&
       (!filters.priceRange || 
         (filters.priceRange.min === 0 && filters.priceRange.max >= 100000)) &&
-      !search?.trim() && // Updated search check
+      !search?.trim() &&
       !filters.ecoFriendly &&
       filters.assemblyRequired === null &&
       !filters.freeShipping
     );
   };
 
-  // Debounced filtering effect
+  // Debounced filtering effect - reset to page 1 and fetch new results
   useEffect(() => {
     // Clear existing timeout
     if (filterTimeoutRef.current) {
@@ -92,132 +210,10 @@ const Products = () => {
 
     // Debounce the filtering
     filterTimeoutRef.current = setTimeout(() => {
-      let filtered = [...products];
-
-      // Move search filtering to the beginning
-      if (search && search.trim()) {
-        const searchLower = search.toLowerCase().trim();
-        filtered = filtered.filter(product => {
-          // Expand searchable fields
-          const searchFields = [
-            product.name,
-            product.description,
-            product.shortDescription,
-            ...(product.tags || []),
-            ...(product.material || []),
-            ...(product.style || []),
-            ...(product.roomType || []),
-            product.category?.name,
-            product.brand?.name,
-          ].filter(Boolean); // Remove null/undefined values
-          
-          // Check if any field contains the search term
-          return searchFields.some(field => 
-            String(field).toLowerCase().includes(searchLower)
-          );
-        });
-        
-        console.log(`Search results for "${search}":`, filtered.length);
-      }
-
-      if (areFiltersEmpty()) {
-        setFilteredProducts(products);
-        setCurrentPage(1);
-        setIsFiltering(false);
-        return;
-      }
-
-      // Category filter - This is the main fix
-      if (filters.category) {
-        console.log("Filtering by category:", filters.category);
-        filtered = filtered.filter(product => {
-          const categoryMatch = product.category && 
-            (typeof product.category === 'string' 
-              ? product.category === filters.category 
-              : product.category._id === filters.category
-            );
-          console.log(`Product ${product.name}: category=${product.category}, match=${categoryMatch}`);
-          return categoryMatch;
-        });
-        console.log("Products after category filter:", filtered.length);
-      }
-
-      // Sub-category filter
-      if (filters.subCategory) {
-        filtered = filtered.filter(product =>
-          product.subCategory && 
-          (typeof product.subCategory === 'string' 
-            ? product.subCategory === filters.subCategory 
-            : product.subCategory._id === filters.subCategory
-          )
-        );
-      }
-
-      // Room type filter
-      if (filters.roomType && filters.roomType.length > 0) {
-        filtered = filtered.filter(product =>
-          product.roomType && 
-          Array.isArray(product.roomType) &&
-          product.roomType.some(room => filters.roomType.includes(room))
-        );
-      }
-
-      // Style filter
-      if (filters.style && filters.style.length > 0) {
-        filtered = filtered.filter(product =>
-          product.style && 
-          Array.isArray(product.style) &&
-          product.style.some(s => filters.style.includes(s))
-        );
-      }
-
-      // Material filter
-      if (filters.material && filters.material.length > 0) {
-        filtered = filtered.filter(product =>
-          product.material && 
-          Array.isArray(product.material) &&
-          product.material.some(m => filters.material.includes(m))
-        );
-      }
-
-      // Color filter
-      if (filters.color && filters.color.length > 0) {
-        filtered = filtered.filter(product =>
-          product.color && 
-          Array.isArray(product.color) &&
-          product.color.some(c => filters.color.includes(c))
-        );
-      }
-
-      // Price range filter
-      if (filters.priceRange && 
-          (filters.priceRange.min > 0 || filters.priceRange.max < 100000)) {
-        filtered = filtered.filter(product =>
-          product.price >= filters.priceRange.min && 
-          product.price <= filters.priceRange.max
-        );
-      }
-
-      // Boolean filters
-      if (filters.ecoFriendly) {
-        filtered = filtered.filter(product => product.ecoFriendly === true);
-      }
-
-      if (filters.assemblyRequired !== null) {
-        filtered = filtered.filter(product => 
-          product.assemblyRequired === filters.assemblyRequired
-        );
-      }
-
-      if (filters.freeShipping) {
-        filtered = filtered.filter(product => product.freeShipping === true);
-      }
-
-      console.log("Final filtered products:", filtered.length);
-      setFilteredProducts(filtered);
-      setCurrentPage(1);
-      setIsFiltering(false);
-    }, 300); // 300ms debounce delay
+      console.log("Filters changed, fetching new results...");
+      setCurrentPage(1); // Reset to first page
+      getAllProducts(1, false); // Fetch with new filters
+    }, 500); // 500ms debounce delay for filters
 
     // Cleanup function
     return () => {
@@ -225,7 +221,7 @@ const Products = () => {
         clearTimeout(filterTimeoutRef.current);
       }
     };
-  }, [products, filters, search]);
+  }, [filters, search]);
 
   return (
     <div className="flex flex-col lg:flex-row bg-black text-[#FFD700] min-h-screen">
@@ -245,7 +241,7 @@ const Products = () => {
 
           {/* Debug Info - Remove in production */}
           <div className="text-xs text-gray-500">
-            <div>Total: {products.length} | Filtered: {filteredProducts.length}</div>
+            <div>Total: {totalProducts} | Page: {currentPage}/{totalPages}</div>
             {filters.category && (
               <div>Active Category: {filters.category}</div>
             )}
@@ -276,7 +272,7 @@ const Products = () => {
 
             {/* Products Grid with Smooth Transition */}
             <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 transition-opacity duration-300 ${isFiltering ? 'opacity-50' : 'opacity-100'}`}>
-              {paginatedProducts.map((prod, index) => (
+              {products.map((prod, index) => (
                 <div
                   key={prod._id}
                   className={`product-card-wrapper transform transition-all duration-500 ease-out ${
@@ -298,7 +294,7 @@ const Products = () => {
             </div>
 
             {/* Enhanced No Products Message */}
-            {filteredProducts.length === 0 && !loading && !isFiltering && (
+            {products.length === 0 && !loading && !isFiltering && (
               <div className="flex flex-col items-center justify-center h-[40vh] transition-all duration-800 translate-y-0 opacity-100">
                 <div className="text-6xl mb-4">🔍</div>
                 <div className="text-2xl font-semibold mb-2 text-yellow-400">No Products Found</div>
@@ -321,7 +317,7 @@ const Products = () => {
               </div>
             )}
 
-            {/* Smooth Pagination */}
+            {/* Server-side Pagination */}
             {totalPages > 1 && !isFiltering && (
               <div className="flex justify-center items-center mt-10 gap-2 flex-wrap transition-all duration-500 translate-y-0 opacity-100">
                 {/* Previous Button */}
@@ -329,6 +325,7 @@ const Products = () => {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     className="px-4 py-2 rounded-lg border border-[#FFD700] hover:bg-[#FFD700] hover:text-black transition-all duration-300 hover:scale-110 active:scale-95 hover:shadow-lg"
+                    disabled={isFiltering}
                   >
                     ←
                   </button>
@@ -353,6 +350,7 @@ const Products = () => {
                               ? "bg-[#FFD700] text-black font-bold shadow-lg scale-110 border-[#FFD700]"
                               : "border-[#FFD700] hover:bg-[#FFD700] hover:text-black hover:shadow-lg"
                           }`}
+                          disabled={isFiltering}
                         >
                           {pageNum}
                         </button>
@@ -372,6 +370,7 @@ const Products = () => {
                           ? "bg-[#FFD700] text-black font-bold shadow-lg scale-110 border-[#FFD700]"
                           : "border-[#FFD700] hover:bg-[#FFD700] hover:text-black hover:shadow-lg"
                       }`}
+                      disabled={isFiltering}
                     >
                       {pageNum}
                     </button>
@@ -383,6 +382,7 @@ const Products = () => {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     className="px-4 py-2 rounded-lg border border-[#FFD700] hover:bg-[#FFD700] hover:text-black transition-all duration-300 hover:scale-110 active:scale-95 hover:shadow-lg"
+                    disabled={isFiltering}
                   >
                     →
                   </button>
@@ -393,10 +393,10 @@ const Products = () => {
             {/* Product Count Indicator */}
             {!isFiltering && (
               <div className="text-center mt-6 text-gray-400 transition-all duration-500 translate-y-0 opacity-100">
-                Showing {paginatedProducts.length} of {filteredProducts.length} products
-                {filteredProducts.length !== products.length && (
+                Showing {products.length} of {totalProducts} products
+                {currentPage > 1 && (
                   <span className="text-yellow-400 ml-2">
-                    (filtered from {products.length} total)
+                    (Page {currentPage} of {totalPages})
                   </span>
                 )}
               </div>

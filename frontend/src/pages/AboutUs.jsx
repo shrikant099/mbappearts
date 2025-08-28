@@ -33,11 +33,7 @@ const staggerContainer = {
 };
 
 const AboutUs = () => {
-  const exploreItems = [
-    { image: ourproducts, title: "Our Products" },
-    { image: ourstores, title: "Our Showrooms" },
-    { image: ourfurniture, title: "Our Furniture" }
-  ];
+ 
 
   const valueItems = [
     {
@@ -65,11 +61,11 @@ const AboutUs = () => {
   ];
 
   return (
-    <div className="bg-black text-white font-sans overflow-x-hidden relative">
+    <div className="bg-black text-white font-sans overflow-x-hidden hidescroll relative">
       {/* GLOBAL BACKGROUND DOTS/BLOBS - These will be subtle and overlay everything */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none hidescroll">
         {/* Large, slow-moving blobs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FFD770]/5 rounded-full blur-3xl animate-blob-slow mix-blend-screen" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FFD770]/5 rounded-full blur-3xl animate-blob-slow mix-blend-screen hidescroll" />
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gray-700/5 rounded-full blur-3xl animate-blob-slow delay-1000 mix-blend-screen" />
 
         {/* Smaller, faster-moving dots/particles */}
@@ -136,7 +132,7 @@ const AboutUs = () => {
       </div>
 
       {/* Mission Statement */}
-      <div className="py-20 bg-gray-900 relative">
+      <div className="py-20 bg-gray-900 relative hidescroll">
          {/* Section specific dots/blobs */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-yellow-400/5 rounded-full blur-3xl animate-blob-fast" />
         <div className="absolute bottom-10 right-10 w-32 h-32 bg-gray-700/5 rounded-full blur-2xl animate-pulse delay-500" />
@@ -281,51 +277,7 @@ const AboutUs = () => {
         </motion.div>
       </div>
 
-      {/* More to Explore Section */}
-      <div className="py-20 bg-black text-center relative">
-        {/* Section specific dots/blobs */}
-        <div className="absolute top-10 left-10 w-28 h-28 bg-[#FFD770]/10 rounded-full blur-2xl animate-spin-fast opacity-50" />
-        <div className="absolute bottom-10 right-10 w-20 h-20 bg-gray-500/10 rounded-full blur-xl animate-pulse delay-700 opacity-50" />
-
-        <motion.div
-          className="max-w-7xl mx-auto px-4"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={staggerContainer}
-        >
-          <motion.h2
-            variants={fadeInUp}
-            className="text-3xl md:text-5xl font-bold mb-16 bg-gradient-to-r from-[#FFD770] to-yellow-500 bg-clip-text text-transparent"
-          >
-            More to Explore
-          </motion.h2>
-
-          <motion.div
-            className="grid md:grid-cols-3 gap-8"
-            variants={staggerContainer}
-          >
-            {exploreItems.map((item, index) => (
-              <motion.div
-                key={index}
-                variants={fadeInUp}
-                className="group cursor-pointer"
-              >
-                <div className="overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-shadow duration-300">
-                  <img
-                    src={item.image}
-                    className="w-full h-64 md:h-80 object-cover transition-transform duration-700 group-hover:scale-110"
-                    alt={item.title}
-                  />
-                </div>
-                <div className="mt-6 text-xl font-semibold text-gray-200 transition-colors duration-300 group-hover:text-[#FFD700]">
-                  {item.title}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.div>
-      </div>
+     
 
       {/* Tailwind CSS Custom Keyframes for animations */}
       <style jsx>{`

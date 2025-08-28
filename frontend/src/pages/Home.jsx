@@ -20,7 +20,7 @@ import { apiConnector } from "../services/apiConnector";
 import video from "../assets/images/3770034-hd_1920_1080_25fps.mp4"
 
 const { topReview } = reviewEndpoints;
-const { getAllCategories } = categoryEndpoints; // Add this to your API endpoints
+const { getAllCategory } = categoryEndpoints; // Add this to your API endpoints
 
 // Fallback images for categories
 const categoryImages = {
@@ -61,10 +61,14 @@ const Home = () => {
     }
   }
 
+ 
+
   // Fetch categories from database
   const fetchCategories = async () => {
     try {
-      const response = await apiConnector("GET", getAllCategories);
+      const response = await apiConnector("GET", getAllCategory);
+
+      console.log(response)
       const fetchedCategories = response?.data?.categories || [];
       
       // Filter active categories and add fallback images
@@ -126,6 +130,8 @@ const Home = () => {
 
   const handleShopNowClick = () => navigate("/products");
   const handleLearnMoreClick = () => navigate("/about");
+
+  
 
   // Fallback category data if database fetch fails
   const fallbackCategoryData = useMemo(() => [
