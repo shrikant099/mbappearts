@@ -13,6 +13,12 @@ const cartItemSchema = new mongoose.Schema({
     default: 1,
     min: 1
   },
+  color:{
+    type: String
+  },
+  material:{
+    type: String
+  },
   addedAt: {
     type: Date,
     default: Date.now
