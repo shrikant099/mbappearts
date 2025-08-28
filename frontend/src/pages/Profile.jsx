@@ -27,6 +27,8 @@ import { Truck, Building2, Hash, ExternalLink } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import { setProductData } from "../slices/productSlice";
 
+const {printReceipt} = orderEndpoints;
+
 // Corrected EditableField to prevent cursor jumping
 const EditableField = ({
   label,
@@ -54,6 +56,8 @@ const EditableField = ({
   const handleCancel = () => {
     setIsEditing(false);
   };
+
+  
 
   const handleSaveClick = () => {
     parentHandleSave(field, inputValue);
@@ -385,6 +389,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+
   // State and ref for picture upload
   const [imageUploadLoading, setImageUploadLoading] = useState(false);
   const fileInputRef = useRef(null);
@@ -393,6 +398,8 @@ const Profile = () => {
     fetchProfile();
     setTimeout(() => setIsVisible(true), 100);
   }, []);
+
+ 
 
   const fetchProfile = async () => {
     try {
@@ -413,6 +420,23 @@ const Profile = () => {
   };
 
   const token = useSelector((state) => state.auth.token);
+
+   const receiptHandler = async (id) => {
+    try{
+      
+      const res = await apiConnector("GET",printReceipt + id + '/receipt',null,{
+        Authorization : `Bearer ${token}`
+      });
+
+      console.log(res);
+
+      
+
+    }catch(error){
+      console.log(error);
+      toast.error('Unable to print receipt.')
+    }
+  }
 
   // Updated fetchOrders with pagination
   const fetchOrders = async (page = 1, limit = 10, status = '') => {
@@ -1135,17 +1159,7 @@ const Profile = () => {
                       </p>
                     </div>
 
-                    {/* Cancel button for individual items - Mobile */}
-                    {!["Delivered", "Cancelled"].includes(
-                      selectedOrder.currentStatus
-                    ) && (
-                      <button
-                        onClick={() => cancelOrder(selectedOrder._id)}
-                        className="px-3 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all duration-300 text-xs font-medium"
-                      >
-                        Cancel
-                      </button>
-                    )}
+                    
                   </div>
                 </div>
               </div>
@@ -1203,6 +1217,9 @@ const Profile = () => {
           >
             Need help? Contact our support team
           </div>
+          <div onClick={()=>receiptHandler(selectedOrder._id)} className="flex items-center cursor-pointer gap-2 px-4 py-2 border mr-2 border-blue-500 text-blue-500 rounded-lg hover:bg-blue-500 hover:text-white transition-all duration-300 hover:scale-105">
+                  Download Receipt
+          </div>
           <div className="flex gap-3">
             {!["Delivered", "Cancelled"].includes(
               selectedOrder.currentStatus
@@ -1212,7 +1229,7 @@ const Profile = () => {
                   cancelOrder(selectedOrder._id);
                   setSelectedOrder(null);
                 }}
-                className="flex items-center gap-2 px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all duration-300 hover:scale-105"
+                className="flex items-center gap-2 z-[105] px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all duration-300 hover:scale-105"
               >
                 <XCircle size={16} />
                 Cancel Order
@@ -1220,7 +1237,7 @@ const Profile = () => {
             )}
             <button
               onClick={() => setSelectedOrder(null)}
-              className="px-6 py-2 bg-[#ecba49] text-black rounded-lg font-semibold hover:brightness-110 transition-all duration-300 hover:scale-105"
+              className="px-6 py-2 bg-[#ecba49] text-black rounded-lg font-semibold hover:brightness-110 transition-all duration-300 hover:scale-105 hidden opacity-0 lg:flex lg:opacity-100"
             >
               Close
             </button>

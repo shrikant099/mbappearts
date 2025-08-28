@@ -50,6 +50,7 @@ export default function ProductDetail() {
   const buyNowHandler = () => {
     if (userRole !== "user") {
       toast.error("Please log in as a valid user!");
+      navigate('/login')
       return;
     }
     if (!product || product.stock <= 0) {
@@ -95,6 +96,7 @@ export default function ProductDetail() {
   const cartHandler = async () => {
     if (userRole !== "user") {
       toast.error("Please log in as a valid user!");
+      navigate('/login')
       return;
     }
     if (!product || !product._id || product.stock <= 0) {
@@ -570,7 +572,7 @@ export default function ProductDetail() {
               ({reviews.length} reviews)
             </span>
             <span className="bg-yellow-600 text-black px-2 py-1 rounded text-xs font-bold animate-pulse hover:animate-none hover:scale-105 transition-transform duration-300">
-              UKF's Pick
+              Mbappe-Arts' Pick
             </span>
           </div>
 
@@ -606,27 +608,7 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Coupon Checkbox */}
-          <div className={`flex items-center gap-2 transition-all duration-600 delay-700 hover:scale-105 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-            <input type="checkbox" id="coupon" className="accent-[#ecba49] transition-transform duration-300 hover:scale-110" />
-            <label htmlFor="coupon" className="text-sm cursor-pointer hover:text-yellow-300 transition-colors duration-300">
-              Apply 3% coupon
-            </label>
-          </div>
-
-          {/* Offers Section */}
-          <div className={`bg-[#1a1a1a] p-4 rounded-lg space-y-2 text-sm border border-transparent hover:border-[#ecba49]/30 transition-all duration-600 delay-800 hover:shadow-lg ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-            {offers.map((offer, idx) => (
-              <div 
-                key={idx}
-                className="flex items-center gap-2 hover:text-yellow-300 transition-colors duration-300 hover:scale-105 transform"
-                style={{ transitionDelay: `${idx * 100}ms` }}
-              >
-                <span className="text-lg">{offer.icon}</span>
-                <span>{offer.text}</span>
-              </div>
-            ))}
-          </div>
+         
 
           {/* Stock Status */}
           <div className={`font-semibold transition-all duration-600 delay-900 hover:scale-105 ${
@@ -638,7 +620,7 @@ export default function ProductDetail() {
           {/* Shipping Info */}
           <div className={`space-y-1 text-sm text-gray-400 transition-all duration-600 delay-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
             <p className="hover:text-gray-300 transition-colors duration-300">
-              Ships from UKF • Sold by RK World Infocom Pvt Ltd
+              Ships from Mbappe-Arts • Sold by Mbappe-Arts Pvt Ltd
             </p>
             <p className="hover:text-gray-300 transition-colors duration-300">
               Payment: Secure transaction 🔒
