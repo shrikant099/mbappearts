@@ -45,40 +45,47 @@ const Navbar = () => {
 
   // Improved saveCart function
   const saveCart = async () => {
-    if (!user?._id) return;
+  if (!user?._id) return;
 
-    setIsSavingCart(true);
-    try {
-      const cartItems = cart.map((item) => ({
-        productId: item._id,
-        quantity: item.quantity,
-        price: item.price,
-        size: item.size,
-        color: item.color,
-      }));
+  setIsSavingCart(true);
+  try {
+    const cartItems = cart.map((item) => ({
+      productId: item._id,
+      quantity: item.quantity,
+      price: item.price,
+      // Convert color array to string (take first/selected color)
+      color: item.selectedColor || (item.color && item.color[0]) || "",
+      // Convert material array to string (take first/selected material)  
+      material: item.selectedMaterial || (item.material && item.material[0]) || "",
+      size: item.selectedSize || "Standard",
+      selectedVariant: item.selectedVariant || null
+    }));
 
-      const response = await apiConnector(
-        "POST",
-        `${bulkCart}${user._id}/bulk`,
-        { items: cartItems }, // This will be { items: [] } if cart is empty,
-        { Authorization: `Bearer ${token}` }
-      );
+    console.log("Cart items to save:", cartItems);
 
-      console.log("save cart response", response);
+    const response = await apiConnector(
+      "POST",
+      `${bulkCart}${user._id}/bulk`,
+      { items: cartItems },
+      { Authorization: `Bearer ${token}` }
+    );
 
-      if (!response.data.success) {
-        throw new Error(response.data.message || "Failed to save cart");
-      }
+    console.log("Save cart response:", response);
 
-     
-    } catch (error) {
-      console.error("Error saving cart:", error);
-      
-    } finally {
-      setIsSavingCart(false);
-      
+    if (!response.data.success) {
+      throw new Error(response.data.message || "Failed to save cart");
     }
-  };
+
+    toast.success("Cart saved successfully!");
+   
+  } catch (error) {
+    console.error("Error saving cart:", error);
+    toast.error("Failed to save cart");
+  } finally {
+    setIsSavingCart(false);
+  }
+};
+
 
   const logoutHandler = async () => {
     try {

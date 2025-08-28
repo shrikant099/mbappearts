@@ -73,19 +73,31 @@ export default function Login() {
 
 
       if (response.data.user.accountType === "user") {
-        console.log("TOKEN FOR CART : ",response.data.user.token)
-        const response2 = await apiConnector("GET", `${getCart}/${user._id}`,null,{Authorization : `Bearer ${response.data.user.token}`});
-        console.log("this is get cart", response2);
-        response2.data.cart.forEach((entry) => {
-          const completeProduct = {
-            ...entry.product,
-            quantity: entry.quantity,
-            size:entry.size,
-            color:entry.color,
-          };
-          dispatch(addToCart(completeProduct));
-        });
-      }
+  console.log("TOKEN FOR CART : ", response.data.user.token);
+  const response2 = await apiConnector(
+    "GET",
+    `${getCart}/${user._id}`,
+    null,
+    { Authorization: `Bearer ${response.data.user.token}` }
+  );
+  console.log("this is get cart", response2);
+
+  response2.data.cart.forEach((entry) => {
+    // Build complete cart item as needed by your cart slice (matching frontend + backend fields)
+    const completeProduct = {
+      ...entry.product,
+      quantity: entry.quantity,
+      size: entry.size || "Standard",
+      color: entry.color ? [entry.color] : [],
+      material: entry.material ? [entry.material] : [],
+      selectedColor: entry.color || "",
+      selectedMaterial: entry.material || "",
+      selectedSize: entry.size || "Standard",
+      selectedVariant: entry.selectedVariant || null  // if your backend provides selectedVariant
+    };
+    dispatch(addToCart(completeProduct));
+  });
+}
 
       setCredentials({
         phone: "",

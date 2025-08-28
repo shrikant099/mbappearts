@@ -47,92 +47,110 @@ export default function ProductDetail() {
   const [reviewsLoading, setReviewsLoading] = useState(true);
 
   // --- Cart and Buy Now handlers with selection validation ---
-  const buyNowHandler = () => {
-    if (userRole !== "user") {
-      toast.error("Please log in as a valid user!");
-      navigate('/login')
-      return;
-    }
-    if (!product || product.stock <= 0) {
-      toast.error("Product is out of stock!");
-      return;
-    }
-    if (product.color && product.color.length > 1 && !selectedColor) {
-      toast.error("Please select a color");
-      return;
-    }
-    if (product.material && product.material.length > 1 && !selectedMaterial) {
-      toast.error("Please select a material");
-      return;
-    }
-    // if (product.style && product.style.length > 1 && !selectedStyle) {
-    //   toast.error("Please select a style");
-    //   return;
-    // }
-    // if (product.roomType && product.roomType.length > 1 && !selectedRoomType) {
-    //   toast.error("Please select a room type");
-    //   return;
-    // }
-    if (product.variants && product.variants.length > 0 && !selectedVariant) {
-      toast.error("Please select a variant");
-      return;
-    }
-    // Compose product data for order
-    const productToOrder = {
-      ...product,
-      selectedColor: selectedColor || (product.color && product.color[0]) || "",
-      selectedMaterial: selectedMaterial || (product.material && product.material[0]) || "",
-      selectedStyle: selectedStyle || (product.style && product.style[0]) || "",
-      selectedRoomType: selectedRoomType || (product.roomType && product.roomType[0]) || "",
-      selectedSize: selectedSize || "Standard", // Default size
-      selectedVariant,
-      price: selectedVariant ? selectedVariant.price : product.price,
-    };
-
-    dispatch(setProductData(productToOrder));
-    navigate("/create-order");
+ const buyNowHandler = () => {
+  if (userRole !== "user") {
+    toast.error("Please log in as a valid user!");
+    navigate('/login')
+    return;
+  }
+  if (!product || product.stock <= 0) {
+    toast.error("Product is out of stock!");
+    return;
+  }
+  if (product.color && product.color.length > 1 && !selectedColor) {
+    toast.error("Please select a color");
+    return;
+  }
+  if (product.material && product.material.length > 1 && !selectedMaterial) {
+    toast.error("Please select a material");
+    return;
+  }
+  if (product.variants && product.variants.length > 0 && !selectedVariant) {
+    toast.error("Please select a variant");
+    return;
+  }
+  
+  // FIXED: Create clean product object with only selected attributes
+  const productToOrder = {
+    _id: product._id,
+    name: product.name,
+    price: selectedVariant ? selectedVariant.price : product.price,
+    comparePrice: product.comparePrice,
+    images: product.images,
+    brand: product.brand,
+    category: product.category,
+    stock: product.stock,
+    // Only selected attributes
+    color: selectedColor ? [selectedColor] : (product.color && product.color.length === 1 ? [product.color[0]] : []),
+    material: selectedMaterial ? [selectedMaterial] : (product.material && product.material.length === 1 ? [product.material[0]] : []),
+    selectedColor: selectedColor || (product.color && product.color[0]) || "",
+    selectedMaterial: selectedMaterial || (product.material && product.material[0]) || "",
+    selectedSize: selectedSize || "Standard",
+    selectedVariant,
+    quantity: 1,
   };
+
+  dispatch(setProductData(productToOrder));
+  navigate("/create-order");
+};
+
 
   const cartHandler = async () => {
-    if (userRole !== "user") {
-      toast.error("Please log in as a valid user!");
-      navigate('/login')
-      return;
-    }
-    if (!product || !product._id || product.stock <= 0) {
-      toast.error("Product is out of stock!");
-      return;
-    }
-    if (product.color && product.color.length > 1 && !selectedColor) {
-      toast.error("Please select a color");
-      return;
-    }
-    if (product.material && product.material.length > 1 && !selectedMaterial) {
-      toast.error("Please select a material");
-      return;
-    }
-    try {
-      setIsAddingToCart(true);
+  if (userRole !== "user") {
+    toast.error("Please log in as a valid user!");
+    navigate('/login')
+    return;
+  }
+  if (!product || !product._id || product.stock <= 0) {
+    toast.error("Product is out of stock!");
+    return;
+  }
+  if (product.color && product.color.length > 1 && !selectedColor) {
+    toast.error("Please select a color");
+    return;
+  }
+  if (product.material && product.material.length > 1 && !selectedMaterial) {
+    toast.error("Please select a material");
+    return;
+  }
+  if (product.variants && product.variants.length > 0 && !selectedVariant) {
+    toast.error("Please select a variant");
+    return;
+  }
+  
+  try {
+    setIsAddingToCart(true);
 
-      const productToAdd = {
-        ...product,
-        selectedColor: selectedColor || (product.color && product.color[0]) || "",
-        selectedMaterial: selectedMaterial || (product.material && product.material[0]) || "",
-        selectedStyle: selectedStyle || (product.style && product.style[0]) || "",
-        selectedRoomType: selectedRoomType || (product.roomType && product.roomType[0]) || "",
-        selectedSize: selectedSize || "Standard",
-        selectedVariant,
-        price: selectedVariant ? selectedVariant.price : product.price,
-      };
+    // FIXED: Only include selected attributes in cart item
+    const productToAdd = {
+      _id: product._id,
+      name: product.name,
+      price: selectedVariant ? selectedVariant.price : product.price,
+      comparePrice: product.comparePrice,
+      images: product.images,
+      brand: product.brand,
+      category: product.category,
+      stock: product.stock,
+      // Only store selected color as single-item array
+      color: selectedColor ? [selectedColor] : (product.color && product.color.length === 1 ? [product.color[0]] : []),
+      // Only store selected material as single-item array
+      material: selectedMaterial ? [selectedMaterial] : (product.material && product.material.length === 1 ? [product.material[0]] : []),
+      // Store individual selected attributes for easy access
+      selectedColor: selectedColor || (product.color && product.color[0]) || "",
+      selectedMaterial: selectedMaterial || (product.material && product.material[0]) || "",
+      selectedSize: selectedSize || "Standard",
+      selectedVariant: selectedVariant || null,
+      quantity: 1, // Default quantity for new items
+    };
 
-      dispatch(addToCart(productToAdd));
-      toast.success("Added to cart!");
-    } catch (error) {
-      toast.error("Failed to add to cart");
-    } finally {
-      setIsAddingToCart(false);
-    }
-  };
+    dispatch(addToCart(productToAdd));
+  } catch (error) {
+    toast.error("Failed to add to cart");
+  } finally {
+    setIsAddingToCart(false);
+  }
+};
+
 
   const handleImageSelect = (imageUrl) => {
     setImageLoading(true);

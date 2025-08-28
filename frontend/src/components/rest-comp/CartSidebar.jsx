@@ -29,7 +29,6 @@ const CartSidebar = () => {
       return;
     }
     
-    // Navigate to CreateOrder with cart flag
     navigate("/create-order?fromCart=true", {
       state: { fromCart: true }
     });
@@ -51,6 +50,14 @@ const CartSidebar = () => {
   const calculateDiscount = (price, comparePrice) => {
     if (!comparePrice || comparePrice <= price) return 0;
     return Math.round(((comparePrice - price) / comparePrice) * 100);
+  };
+
+  // FIXED: Safe function to handle array/string joining
+  const safeDisplayValue = (value, fallback = "N/A") => {
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    return value || fallback;
   };
 
   return (
@@ -108,7 +115,7 @@ const CartSidebar = () => {
                     <div key={item._id} className="flex gap-3 p-4 bg-gray-900 bg-opacity-70 rounded-lg border border-[#FFD700] border-opacity-20">
                       {/* Product Image */}
                       <img 
-                        src={item.images?.[0]?.url || '/placeholder.jpg'} 
+                        src={item.images[0]?.url || '/placeholder.jpg'} 
                         alt={item.name}
                         className="w-20 h-24 object-cover rounded-md flex-shrink-0 cursor-pointer"
                         onClick={() => handleClick(item)}
@@ -123,7 +130,7 @@ const CartSidebar = () => {
                           {item.name}
                         </h3>
 
-                        {/* Product Details */}
+                        {/* Product Details - FIXED */}
                         {item.selectedVariant ? (
                           <>
                             <p className="text-xs text-gray-300 mb-1">
@@ -135,14 +142,14 @@ const CartSidebar = () => {
                           </>
                         ) : (
                           <>
-                            {item.material && (
+                            {(item.material || item.selectedMaterial) && (
                               <p className="text-xs text-gray-300 mb-1">
-                                Material: {item.material.join(', ')}
+                                Material: {safeDisplayValue(item.material) || item.selectedMaterial}
                               </p>
                             )}
-                            {item.color && (
+                            {(item.color || item.selectedColor) && (
                               <p className="text-xs text-gray-300 mb-2">
-                                Color: {item.color.join(', ')}
+                                Color: {safeDisplayValue(item.color) || item.selectedColor}
                               </p>
                             )}
                           </>

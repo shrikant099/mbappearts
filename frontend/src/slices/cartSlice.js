@@ -19,13 +19,23 @@ const cartSlice = createSlice({
   reducers: {
     addToCart: (state, action) => {
       const newItem = action.payload;
-      const existingItem = state.cart.find((item) => item._id === newItem._id);
+      
+      // Create unique identifier including selected attributes
+      const existingItem = state.cart.find((item) => 
+        item._id === newItem._id &&
+        item.selectedColor === newItem.selectedColor &&
+        item.selectedMaterial === newItem.selectedMaterial &&
+        item.selectedSize === newItem.selectedSize &&
+        ((item.selectedVariant && newItem.selectedVariant && 
+          item.selectedVariant._id === newItem.selectedVariant._id) || 
+         (!item.selectedVariant && !newItem.selectedVariant))
+      );
 
       if (existingItem) {
         existingItem.quantity += 1;
         toast.success("Increased quantity");
         state.totalItems += 1;
-        state.total += newItem.price * 1;
+        state.total += newItem.price;
       } else {
         state.cart.push({ ...newItem, quantity: newItem.quantity || 1 });
         toast.success("Item added to cart");
@@ -38,9 +48,35 @@ const cartSlice = createSlice({
       localStorage.setItem("totalItems", JSON.stringify(state.totalItems));
     },
 
+    increaseQuantity: (state, action) => {
+      const cartItem = action.payload;
+      const item = state.cart.find((item) => 
+        item._id === cartItem._id &&
+        item.selectedColor === cartItem.selectedColor &&
+        item.selectedMaterial === cartItem.selectedMaterial &&
+        item.selectedSize === cartItem.selectedSize
+      );
+
+      if (item) {
+        item.quantity += 1;
+        state.totalItems += 1;
+        state.total += item.price;
+        toast.success("Increased quantity");
+      }
+
+      localStorage.setItem("cart", JSON.stringify(state.cart));
+      localStorage.setItem("total", JSON.stringify(state.total));
+      localStorage.setItem("totalItems", JSON.stringify(state.totalItems));
+    },
+
     decreaseItemQuantity: (state, action) => {
       const cartItem = action.payload;
-      const item = state.cart.find((item) => item._id === cartItem._id);
+      const item = state.cart.find((item) => 
+        item._id === cartItem._id &&
+        item.selectedColor === cartItem.selectedColor &&
+        item.selectedMaterial === cartItem.selectedMaterial &&
+        item.selectedSize === cartItem.selectedSize
+      );
 
       if (!item) {
         toast.error("Item not found in cart");
@@ -61,25 +97,30 @@ const cartSlice = createSlice({
       localStorage.setItem("totalItems", JSON.stringify(state.totalItems));
     },
 
-   removeFromCart: (state, action) => {
-  const cartItem = action.payload;
-  const index = state.cart.findIndex((item) => item._id === cartItem._id);
+    removeFromCart: (state, action) => {
+      const cartItem = action.payload;
+      const index = state.cart.findIndex((item) => 
+        item._id === cartItem._id &&
+        item.selectedColor === cartItem.selectedColor &&
+        item.selectedMaterial === cartItem.selectedMaterial &&
+        item.selectedSize === cartItem.selectedSize
+      );
 
-  if (index === -1) {
-    toast.error("Item not found in cart");
-    return;
-  }
+      if (index === -1) {
+        toast.error("Item not found in cart");
+        return;
+      }
 
-  const item = state.cart[index];
-  state.totalItems -= item.quantity;
-  state.total -= item.price * item.quantity;
-  state.cart.splice(index, 1);
+      const item = state.cart[index];
+      state.totalItems -= item.quantity;
+      state.total -= item.price * item.quantity;
+      state.cart.splice(index, 1);
 
-  localStorage.setItem("cart", JSON.stringify(state.cart));
-  localStorage.setItem("total", JSON.stringify(state.total));
-  localStorage.setItem("totalItems", JSON.stringify(state.totalItems));
-  toast.success("Item removed from cart");
-},
+      localStorage.setItem("cart", JSON.stringify(state.cart));
+      localStorage.setItem("total", JSON.stringify(state.total));
+      localStorage.setItem("totalItems", JSON.stringify(state.totalItems));
+      toast.success("Item removed from cart");
+    },
 
     resetCart: (state) => {
       state.cart = [];
@@ -92,7 +133,7 @@ const cartSlice = createSlice({
   },
 });
 
-export const { addToCart, decreaseItemQuantity, removeFromCart, resetCart } =
+export const { addToCart, increaseQuantity, decreaseItemQuantity, removeFromCart, resetCart } =
   cartSlice.actions;
 
 export default cartSlice.reducer;
