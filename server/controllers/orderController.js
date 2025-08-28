@@ -3,6 +3,7 @@ import Product from '../models/Product.js';
 import User from '../models/User.js';
 import Address from '../models/Address.js';
 import mongoose from 'mongoose';
+import puppeteer from "puppeteer";
 
 import stripe from "stripe"
 import { sendOrderConfirmationEmail, sendTrackingEmail } from '../utils/sendEmail.js';
@@ -766,5 +767,209 @@ export const getUserOrdersNoPagination = async (req, res) => {
       success: false,
       message: error.message,
     });
+  }
+};
+
+
+export const receiptTemplate = (order) => {
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        padding: 40px;
+        color: #333;
+        background: #f9f9f9;
+      }
+      .container {
+        max-width: 800px;
+        margin: auto;
+        background: #fff;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+      .header {
+        border-bottom: 2px solid #444;
+        padding-bottom: 10px;
+        margin-bottom: 25px;
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 28px;
+        color: #222;
+      }
+      .header p {
+        margin: 4px 0;
+        font-size: 13px;
+        color: #555;
+      }
+      h2 {
+        text-align: center;
+        margin: 20px 0;
+        font-size: 20px;
+        color: #111;
+      }
+      .section {
+        margin-bottom: 20px;
+      }
+      .section h3 {
+        font-size: 16px;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 5px;
+        margin-bottom: 10px;
+        color: #333;
+      }
+      .info div, .shipping div {
+        margin: 3px 0;
+        font-size: 14px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+      }
+      table th, table td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        font-size: 14px;
+      }
+      table th {
+        background: #f1f1f1;
+        text-align: center;
+      }
+      table tbody tr:nth-child(even) {
+        background: #fafafa;
+      }
+      .total {
+        text-align: right;
+        margin-top: 25px;
+        font-size: 15px;
+      }
+      .total div {
+        margin: 4px 0;
+      }
+      .total b {
+        font-size: 16px;
+      }
+      .footer {
+        margin-top: 40px;
+        font-size: 12px;
+        text-align: center;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Mbappe Arts</h1>
+        <p>VIKASH NAGAR, CHURU, Rajasthan – 331403</p>
+        <p>Email: tmbapearts@gmail.com | Phone: 9694520525</p>
+      </div>
+
+      <h2>Invoice</h2>
+
+      <div class="section info">
+        <h3>Order Information</h3>
+        <div><b>Order ID:</b> ${order.orderId}</div>
+        <div><b>Order Date:</b> ${new Date(order.createdAt).toDateString()}</div>
+        <div><b>Customer:</b> ${order.user?.name || ""}</div>
+        <div><b>Phone:</b> ${order.user?.phone || ""}</div>
+        <div><b>Payment Method:</b> ${order.paymentMethod}</div>
+        <div><b>Payment Status:</b> ${order.paymentStatus}</div>
+      </div>
+
+      <div class="section shipping">
+        <h3>Shipping Address</h3>
+        <div>${order.shippingAddress?.fullName || ""}</div>
+        <div>${order.shippingAddress?.street || ""}</div>
+        <div>${order.shippingAddress?.city || ""}, ${order.shippingAddress?.state || ""}</div>
+        <div>Pincode: ${order.shippingAddress?.zip || ""}</div>
+        <div>Phone: ${order.shippingAddress?.phone || ""}</div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Price</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${order.items.map(item => `
+            <tr>
+              <td>${item.name}</td>
+              <td style="text-align:center">${item.quantity}</td>
+              <td style="text-align:right">₹${item.price}</td>
+              <td style="text-align:right">₹${item.price * item.quantity}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+
+      <div class="total">
+        <div>Subtotal: ₹${order.subtotal}</div>
+        ${order.shippingFee ? `<div>Shipping Fee: ₹${order.shippingFee}</div>` : ""}
+        ${order.tax ? `<div>Tax: ₹${order.tax}</div>` : ""}
+        ${order.discount ? `<div>Discount: -₹${order.discount}</div>` : ""}
+        <div><b>Total: ₹${order.total}</b></div>
+      </div>
+
+      <div class="footer">
+        <p>Thank you for shopping with Mbappe Arts!</p>
+        <p>This is a system generated receipt.</p>
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+};
+
+
+
+
+
+
+export const downloadReceipt = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate("user", "name phone")
+      .populate("shippingAddress");
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" // path to Chrome on Windows
+    });
+
+    const page = await browser.newPage();
+    const html = receiptTemplate(order);
+
+    await page.setContent(html, { waitUntil: "networkidle0" });
+
+    const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+    await browser.close();
+
+    // ✅ Must set headers before sending
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=receipt-${order.orderId}.pdf`
+    );
+
+    res.end(pdfBuffer); // ✅ Send buffer as response
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error generating receipt" });
   }
 };

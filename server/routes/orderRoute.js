@@ -9,7 +9,8 @@ import {
   getUserOrders,
   addTrackingInfo,
   getUserOrdersNoPagination,
-  getAllOrdersNoPagination
+  getAllOrdersNoPagination,
+  downloadReceipt
 } from '../controllers/orderController.js';
 import { protect, restrictTo } from '../middlewares/authUser.js';
 
@@ -30,6 +31,7 @@ router.put('/:id/tracking', protect, addTrackingInfo);
 //No Pagination routes
 router.get('/orders/user', protect, restrictTo("user", "admin"), getUserOrdersNoPagination);
 router.get('/orders/allorders', protect, restrictTo("user", "admin"), getAllOrdersNoPagination);
+router.get("/:id/receipt",protect,downloadReceipt);
 
 export default router;
 
