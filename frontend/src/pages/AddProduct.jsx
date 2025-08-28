@@ -1002,7 +1002,7 @@ const AddProduct = () => {
                 <h4 className="text-lg font-semibold mb-3 text-[#FFD770] mt-6">Furniture Specifications</h4>
               </div>
 
-              {/* Room Type Selection
+              {/* Room Type Selection */}
               <div className="lg:col-span-3">
                 <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">Room Type</label>
                 <div className="flex flex-wrap gap-2">
