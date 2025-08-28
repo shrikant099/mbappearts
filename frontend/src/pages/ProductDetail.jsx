@@ -65,14 +65,14 @@ export default function ProductDetail() {
       toast.error("Please select a material");
       return;
     }
-    if (product.style && product.style.length > 1 && !selectedStyle) {
-      toast.error("Please select a style");
-      return;
-    }
-    if (product.roomType && product.roomType.length > 1 && !selectedRoomType) {
-      toast.error("Please select a room type");
-      return;
-    }
+    // if (product.style && product.style.length > 1 && !selectedStyle) {
+    //   toast.error("Please select a style");
+    //   return;
+    // }
+    // if (product.roomType && product.roomType.length > 1 && !selectedRoomType) {
+    //   toast.error("Please select a room type");
+    //   return;
+    // }
     if (product.variants && product.variants.length > 0 && !selectedVariant) {
       toast.error("Please select a variant");
       return;
@@ -436,7 +436,7 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Style Selection */}
+          {/* Style Selection
           {product?.style && product.style.length > 1 && (
             <div className={`transition-all duration-600 delay-700 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
               <h3 className="text-lg font-semibold mb-3 text-[#ecba49]">Select Style:</h3>
@@ -458,7 +458,7 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Room Type Selection */}
+          {/* Room Type Selection 
           {product?.roomType && product.roomType.length > 1 && (
             <div className={`transition-all duration-600 delay-800 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
               <h3 className="text-lg font-semibold mb-3 text-[#ecba49]">Select Room Type:</h3>
@@ -478,7 +478,7 @@ export default function ProductDetail() {
                 ))}
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Variants Section */}
           {product?.variants && product.variants.length > 0 && (

@@ -6,7 +6,8 @@ import { categoryEndpoints } from "../../services/api";
 import { useSelector, useDispatch } from "react-redux";
 import { updateFilter, clearFilters } from "../../slices/filterSlice";
 import { setIsOpen } from "../../slices/productSlice";
-import { ROOM_TYPES, STYLES, MATERIALS } from "../../slices/filterSlice";
+// Removed ROOM_TYPES and STYLES imports
+import { MATERIALS } from "../../slices/filterSlice";
 
 const { getAllCategory } = categoryEndpoints;
 
@@ -16,6 +17,7 @@ const ProductSidebar = () => {
   const dispatch = useDispatch();
 
   const [categories, setCategories] = useState([]);
+  // Fixed initial price range bounds
   const [priceRange, setPriceRange] = useState({ min: 0, max: 100000 });
   const isUpdatingFromRedux = useRef(false);
 
@@ -39,13 +41,17 @@ const ProductSidebar = () => {
 
   useEffect(() => { getAllCategories(); }, []);
 
+  // Fixed useEffect for syncing price range from Redux with proper bounds
   useEffect(() => {
     if (filters.priceRange && filters.priceRange.min !== undefined && filters.priceRange.max !== undefined) {
       isUpdatingFromRedux.current = true;
-      setPriceRange({ min: filters.priceRange.min, max: filters.priceRange.max });
+      setPriceRange({
+        min: Math.max(MIN_PRICE, Math.min(filters.priceRange.min, MAX_PRICE)),
+        max: Math.min(MAX_PRICE, Math.max(filters.priceRange.max, MIN_PRICE))
+      });
       setTimeout(() => { isUpdatingFromRedux.current = false; }, 10);
     }
-  }, []);
+  }, [filters.priceRange]);
 
   const handleCategoryChange = (categoryId) => {
     dispatch(updateFilter({ type: "category", value: categoryId, checked: true }));
@@ -59,19 +65,30 @@ const ProductSidebar = () => {
     dispatch(updateFilter({ type, value, checked: true }));
   };
 
+  // Fixed price range change handler with proper bounds checking
   const handlePriceRangeChange = (type, value) => {
     if (isUpdatingFromRedux.current) return;
-    const numValue = parseInt(value, 10);
+    
+    const numValue = Math.max(MIN_PRICE, Math.min(MAX_PRICE, parseInt(value, 10)));
     let newRange = { ...priceRange };
-    if (type === 'min') newRange.min = Math.min(numValue, priceRange.max);
-    else newRange.max = Math.max(numValue, priceRange.min);
+    
+    if (type === 'min') {
+      newRange.min = Math.min(numValue, priceRange.max - STEP);
+    } else {
+      newRange.max = Math.max(numValue, priceRange.min + STEP);
+    }
+    
     setPriceRange(newRange);
-    dispatch(updateFilter({ type: 'priceRange', value: { min: newRange.min, max: newRange.max }, checked: true }));
+    dispatch(updateFilter({ 
+      type: 'priceRange', 
+      value: { min: newRange.min, max: newRange.max }, 
+      checked: true 
+    }));
   };
 
   const handleClearFilters = () => {
     dispatch(clearFilters());
-    setPriceRange({ min: 0, max: 100000 });
+    setPriceRange({ min: MIN_PRICE, max: MAX_PRICE });
   };
 
   const formatPrice = (price) => {
@@ -80,16 +97,16 @@ const ProductSidebar = () => {
     return `₹${price}`;
   };
 
+  // Updated active filter count (removed roomType and style)
   const activeFilterCount = () => {
     let count = 0;
     if (filters.category) count++;
-    count += filters.roomType?.length || 0;
-    count += filters.style?.length || 0;
     count += filters.material?.length || 0;
     count += filters.color?.length || 0;
-    if (filters.priceRange?.min > 0 || filters.priceRange?.max < 100000) count++;
+    if (filters.priceRange?.min > MIN_PRICE || filters.priceRange?.max < MAX_PRICE) count++;
     if (filters.ecoFriendly) count++;
     if (filters.assemblyRequired !== null) count++;
+    if (filters.freeShipping) count++;
     return count;
   };
 
@@ -133,6 +150,7 @@ const ProductSidebar = () => {
                   </button>
                 )}
               </div>
+
               {/* Categories */}
               <div>
                 <h2 className="text-lg font-semibold mb-3 border-b border-[#FFD700] pb-1">Categories</h2>
@@ -171,6 +189,7 @@ const ProductSidebar = () => {
                   )}
                 </div>
               </div>
+
               {/* Price Range */}
               <div>
                 <h2 className="text-lg font-semibold mb-3 border-b border-[#FFD700] pb-1">Price Range</h2>
@@ -242,15 +261,7 @@ const ProductSidebar = () => {
                 </div>
               </div>
 
-              {/* Room Type */}
-              <FilterCheckboxSection
-                title="Room Type"
-                options={ROOM_TYPES}
-                values={filters.roomType}
-                type="roomType"
-                handleChange={handleCheckboxChange}
-              />
-              {/* Material */}
+              {/* Material - Only this remains from the removed filters */}
               <FilterCheckboxSection
                 title="Material"
                 options={MATERIALS}
@@ -258,14 +269,7 @@ const ProductSidebar = () => {
                 type="material"
                 handleChange={handleCheckboxChange}
               />
-              {/* Style */}
-              <FilterCheckboxSection
-                title="Style"
-                options={STYLES}
-                values={filters.style}
-                type="style"
-                handleChange={handleCheckboxChange}
-              />
+
               {/* Additional Filters */}
               <div>
                 <h2 className="text-lg font-semibold mb-3 border-b border-[#FFD700] pb-1">Additional Filters</h2>
@@ -281,7 +285,8 @@ const ProductSidebar = () => {
                       Eco-Friendly
                     </span>
                   </label>
-                  {/* assemblyRequired radio buttons */}
+                  
+                  {/* Assembly Required radio buttons */}
                   <div className="space-y-1">
                     <span className="text-sm text-[#FFD700]">Assembly Required:</span>
                     <div className="flex gap-2">
@@ -317,6 +322,7 @@ const ProductSidebar = () => {
                       </label>
                     </div>
                   </div>
+                  
                   {/* Free Shipping */}
                   <label className="flex items-center cursor-pointer group">
                     <input
@@ -335,6 +341,7 @@ const ProductSidebar = () => {
           </div>
         </div>
       </div>
+
       {/* Styles */}
       <style jsx>{`
         .slider-thumb {

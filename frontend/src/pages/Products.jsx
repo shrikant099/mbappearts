@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import ProductCard from "../components/rest-comp/ProductCard";
 import ProductSidebar from "../components/rest-comp/ProductSidebar";
 import { productEndpoints } from "../services/api";
@@ -25,18 +25,19 @@ const Products = () => {
   // Debounce timer ref to prevent excessive API calls
   const filterTimeoutRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const previousFiltersRef = useRef(null);
 
   const loading = useSelector((state) => state.auth.loading);
   const filters = useSelector((state) => state.filters);
   const search = useSelector((state) => state.filters.searchQuery);
 
-  const handlePageChange = (pageNum) => {
+  const handlePageChange = useCallback((pageNum) => {
     setCurrentPage(pageNum);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  }, []);
 
   // Build query parameters for API call
-  const buildQueryParams = (page = 1) => {
+  const buildQueryParams = useCallback((page = 1) => {
     const params = new URLSearchParams();
     
     // Pagination
@@ -98,9 +99,9 @@ const Products = () => {
     params.append('sort', 'createdAt:desc');
     
     return params.toString();
-  };
+  }, [filters, search, productsPerPage]);
 
-  const getAllProducts = async (page = 1, showLoadingIndicator = true) => {
+  const getAllProducts = useCallback(async (page = 1, showLoadingIndicator = true) => {
     try {
       // Cancel previous request if it exists
       if (abortControllerRef.current) {
@@ -155,10 +156,31 @@ const Products = () => {
       setIsFiltering(false);
       abortControllerRef.current = null;
     }
-  };
+  }, [buildQueryParams, dispatch]);
+
+  // Deep comparison function for filters
+  const filtersChanged = useCallback((newFilters, oldFilters) => {
+    return JSON.stringify(newFilters) !== JSON.stringify(oldFilters);
+  }, []);
+
+  // Memoize current filter state to prevent unnecessary re-renders
+  const currentFilters = useMemo(() => ({
+    category: filters.category,
+    subCategory: filters.subCategory,
+    roomType: filters.roomType,
+    style: filters.style,
+    material: filters.material,
+    color: filters.color,
+    priceRange: filters.priceRange,
+    ecoFriendly: filters.ecoFriendly,
+    assemblyRequired: filters.assemblyRequired,
+    freeShipping: filters.freeShipping,
+    searchQuery: search
+  }), [filters, search]);
 
   // Initial load and animations
   useEffect(() => {
+    getAllProducts(1, true);
     // Initial animations
     setTimeout(() => setIsVisible(true), 100);
     setTimeout(() => setAnimateFilters(true), 300);
@@ -170,15 +192,17 @@ const Products = () => {
         abortControllerRef.current.abort();
       }
     };
-  }, []);
+  }, []); // Empty dependency array for initial load only
 
-  // FIXED: Handle page changes - ALWAYS fetch when page changes
+  // Handle page changes
   useEffect(() => {
-    getAllProducts(currentPage, false);
-  }, [currentPage]);
+    if (currentPage > 1) {
+      getAllProducts(currentPage, false);
+    }
+  }, [currentPage, getAllProducts]);
 
   // Check if filters are empty
-  const areFiltersEmpty = () => {
+  const areFiltersEmpty = useCallback(() => {
     return (
       !filters.category &&
       !filters.subCategory &&
@@ -193,14 +217,22 @@ const Products = () => {
       filters.assemblyRequired === null &&
       !filters.freeShipping
     );
-  };
+  }, [filters, search]);
 
-  // Debounced filtering effect - reset to page 1 and fetch new results
+  // FIXED: Debounced filtering effect with deep comparison
   useEffect(() => {
+    // Check if filters have actually changed using deep comparison
+    if (!filtersChanged(currentFilters, previousFiltersRef.current)) {
+      return; // No change, don't trigger fetch
+    }
+
     // Clear existing timeout
     if (filterTimeoutRef.current) {
       clearTimeout(filterTimeoutRef.current);
     }
+
+    // Update the previous filters reference
+    previousFiltersRef.current = currentFilters;
 
     // Set filtering state
     setIsFiltering(true);
@@ -208,7 +240,8 @@ const Products = () => {
     // Debounce the filtering
     filterTimeoutRef.current = setTimeout(() => {
       console.log("Filters changed, fetching new results...");
-      setCurrentPage(1); // Reset to first page - this will trigger the page useEffect
+      setCurrentPage(1); // Reset to first page
+      getAllProducts(1, false); // Fetch with new filters
     }, 500); // 500ms debounce delay for filters
 
     // Cleanup function
@@ -217,7 +250,7 @@ const Products = () => {
         clearTimeout(filterTimeoutRef.current);
       }
     };
-  }, [filters, search]);
+  }, [currentFilters, filtersChanged, getAllProducts]);
 
   return (
     <div className="flex flex-col lg:flex-row bg-black text-[#FFD700] min-h-screen">

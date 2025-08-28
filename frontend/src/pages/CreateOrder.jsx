@@ -536,12 +536,12 @@ const CreateOrder = () => {
                   {item?.selectedMaterial && (
                     <p>Material: {item.selectedMaterial}</p>
                   )}
-                  {item?.selectedStyle && (
+                  {/* {item?.selectedStyle && (
                     <p>Style: {item.selectedStyle}</p>
                   )}
                   {item?.selectedRoomType && (
                     <p>Room: {item.selectedRoomType}</p>
-                  )}
+                  )} */}
                   {item?.selectedSize && (
                     <p>Size: {item.selectedSize}</p>
                   )}

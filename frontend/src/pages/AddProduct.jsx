@@ -1002,7 +1002,7 @@ const AddProduct = () => {
                 <h4 className="text-lg font-semibold mb-3 text-[#FFD770] mt-6">Furniture Specifications</h4>
               </div>
 
-              {/* Room Type Selection */}
+              {/* Room Type Selection
               <div className="lg:col-span-3">
                 <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">Room Type</label>
                 <div className="flex flex-wrap gap-2">
@@ -1026,7 +1026,7 @@ const AddProduct = () => {
                 </div>
               </div>
 
-              {/* Style Selection */}
+              {/* Style Selection 
               <div className="lg:col-span-3">
                 <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">Style</label>
                 <div className="flex flex-wrap gap-2">
@@ -1048,7 +1048,7 @@ const AddProduct = () => {
                 <div className="mt-2 text-xs sm:text-sm text-[#FFD770]/80">
                   Selected: {formData.style.length > 0 ? formData.style.join(', ') : 'None'}
                 </div>
-              </div>
+              </div> */}
 
               {/* Material Selection */}
               <div className="lg:col-span-3">
