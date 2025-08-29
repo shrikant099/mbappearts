@@ -6,7 +6,6 @@ import { categoryEndpoints } from "../../services/api";
 import { useSelector, useDispatch } from "react-redux";
 import { updateFilter, clearFilters } from "../../slices/filterSlice";
 import { setIsOpen } from "../../slices/productSlice";
-// Removed ROOM_TYPES and STYLES imports
 import { MATERIALS } from "../../slices/filterSlice";
 import { clearSearchData } from "../../slices/searchSlice";
 
@@ -18,14 +17,15 @@ const ProductSidebar = () => {
   const dispatch = useDispatch();
 
   const [categories, setCategories] = useState([]);
-  // Fixed initial price range bounds
   const [priceRange, setPriceRange] = useState({ min: 0, max: 100000 });
+  const [isDragging, setIsDragging] = useState({ min: false, max: false });
   const isUpdatingFromRedux = useRef(false);
 
   // Constants for price range slider
   const MIN_PRICE = 0;
   const MAX_PRICE = 100000;
   const STEP = 1000;
+  const MIN_GAP = 5000;
 
   const getAllCategories = async () => {
     try {
@@ -42,7 +42,7 @@ const ProductSidebar = () => {
 
   useEffect(() => { getAllCategories(); }, []);
 
-  // Fixed useEffect for syncing price range from Redux with proper bounds
+  // Sync price range from Redux
   useEffect(() => {
     if (filters.priceRange && filters.priceRange.min !== undefined && filters.priceRange.max !== undefined) {
       isUpdatingFromRedux.current = true;
@@ -67,25 +67,39 @@ const ProductSidebar = () => {
     dispatch(updateFilter({ type, value, checked: true }));
   };
 
-  // Fixed price range change handler with proper bounds checking
+  // Simplified price range handler
   const handlePriceRangeChange = (type, value) => {
     if (isUpdatingFromRedux.current) return;
     
-    const numValue = Math.max(MIN_PRICE, Math.min(MAX_PRICE, parseInt(value, 10)));
-    let newRange = { ...priceRange };
+    const numValue = parseInt(value);
+    let newMin = priceRange.min;
+    let newMax = priceRange.max;
     
     if (type === 'min') {
-      newRange.min = Math.min(numValue, priceRange.max - STEP);
+      newMin = Math.max(MIN_PRICE, Math.min(numValue, priceRange.max - MIN_GAP));
     } else {
-      newRange.max = Math.max(numValue, priceRange.min + STEP);
+      newMax = Math.min(MAX_PRICE, Math.max(numValue, priceRange.min + MIN_GAP));
     }
     
+    const newRange = { min: newMin, max: newMax };
     setPriceRange(newRange);
-    dispatch(updateFilter({ 
-      type: 'priceRange', 
-      value: { min: newRange.min, max: newRange.max }, 
-      checked: true 
-    }));
+    
+    // Debounce the Redux update
+    clearTimeout(window.priceUpdateTimeout);
+    window.priceUpdateTimeout = setTimeout(() => {
+      dispatch(updateFilter({
+        type: "priceRange",
+        value: newRange
+      }));
+    }, 100);
+  };
+
+  const handleSliderStart = (type) => {
+    setIsDragging({ ...isDragging, [type]: true });
+  };
+
+  const handleSliderEnd = (type) => {
+    setIsDragging({ ...isDragging, [type]: false });
   };
 
   const handleClearFilters = () => {
@@ -99,7 +113,6 @@ const ProductSidebar = () => {
     return `₹${price}`;
   };
 
-  // Updated active filter count (removed roomType and style)
   const activeFilterCount = () => {
     let count = 0;
     if (filters.category) count++;
@@ -111,6 +124,10 @@ const ProductSidebar = () => {
     if (filters.freeShipping) count++;
     return count;
   };
+
+  // Calculate positions for visual feedback
+  const minPercent = ((priceRange.min - MIN_PRICE) / (MAX_PRICE - MIN_PRICE)) * 100;
+  const maxPercent = ((priceRange.max - MIN_PRICE) / (MAX_PRICE - MIN_PRICE)) * 100;
 
   return (
     <>
@@ -192,10 +209,10 @@ const ProductSidebar = () => {
                 </div>
               </div>
 
-              {/* Price Range */}
+              {/* Price Range - Simplified Version */}
               <div>
                 <h2 className="text-lg font-semibold mb-3 border-b border-[#FFD700] pb-1">Price Range</h2>
-                <div className="flex justify-between items-center mb-3 text-sm">
+                <div className="flex justify-between items-center mb-4 text-sm">
                   <span className="bg-[#FFD700] text-black px-2 py-1 rounded font-medium">
                     {formatPrice(priceRange.min)}
                   </span>
@@ -204,40 +221,70 @@ const ProductSidebar = () => {
                     {formatPrice(priceRange.max)}
                   </span>
                 </div>
-                <div className="relative mb-4 py-2">
-                  <div className="h-2 bg-gray-700 rounded-lg relative mx-2">
+                
+                {/* Slider Container */}
+                <div className="relative px-2 py-4 mb-4">
+                  {/* Track */}
+                  <div className="relative h-2 bg-gray-700 rounded-lg">
+                    {/* Active Range */}
                     <div
-                      className="absolute h-2 bg-[#FFD700] rounded-lg"
+                      className="absolute h-2 bg-[#FFD700] rounded-lg transition-all duration-150"
                       style={{
-                        left: `${(priceRange.min / MAX_PRICE) * 100}%`,
-                        width: `${((priceRange.max - priceRange.min) / MAX_PRICE) * 100}%`
+                        left: `${minPercent}%`,
+                        width: `${maxPercent - minPercent}%`
                       }}
                     />
                   </div>
-                  <input
-                    type="range"
-                    min={MIN_PRICE}
-                    max={MAX_PRICE}
-                    step={STEP}
-                    value={priceRange.min}
-                    onChange={(e) => handlePriceRangeChange('min', e.target.value)}
-                    className="absolute top-[-9px] left-0 w-full h-6 appearance-none bg-transparent cursor-grab active:cursor-grabbing slider-thumb"
-                    style={{ zIndex: priceRange.min > MAX_PRICE - 10000 ? 2 : 1, pointerEvents: 'all' }}
-                  />
-                  <input
-                    type="range"
-                    min={MIN_PRICE}
-                    max={MAX_PRICE}
-                    step={STEP}
-                    value={priceRange.max}
-                    onChange={(e) => handlePriceRangeChange('max', e.target.value)}
-                    className="absolute top-[-9px] left-0 w-full h-6 appearance-none bg-transparent cursor-grab active:cursor-grabbing slider-thumb"
-                    style={{ zIndex: priceRange.max < 10000 ? 2 : 1, pointerEvents: 'all' }}
-                  />
+                  
+                  {/* Min Slider
+                  <div className="absolute top-0 left-0 right-0 h-full flex items-center">
+                    <input
+                      type="range"
+                      min={MIN_PRICE}
+                      max={MAX_PRICE}
+                      step={STEP}
+                      value={priceRange.min}
+                      onChange={(e) => handlePriceRangeChange('min', e.target.value)}
+                      onMouseDown={() => handleSliderStart('min')}
+                      onMouseUp={() => handleSliderEnd('min')}
+                      onTouchStart={() => handleSliderStart('min')}
+                      onTouchEnd={() => handleSliderEnd('min')}
+                      className={`absolute w-full h-full bg-transparent appearance-none cursor-pointer outline-none
+                        ${isDragging.min ? 'z-20' : 'z-10'}
+                      `}
+                      style={{
+                        background: 'transparent'
+                      }}
+                    />
+                  </div> */}
+                  
+                  {/* Max Slider */}
+                  <div className="absolute top-0 left-0 right-0 h-full flex items-center">
+                    <input
+                      type="range"
+                      min={MIN_PRICE}
+                      max={MAX_PRICE}
+                      step={STEP}
+                      value={priceRange.max}
+                      onChange={(e) => handlePriceRangeChange('max', e.target.value)}
+                      onMouseDown={() => handleSliderStart('max')}
+                      onMouseUp={() => handleSliderEnd('max')}
+                      onTouchStart={() => handleSliderStart('max')}
+                      onTouchEnd={() => handleSliderEnd('max')}
+                      className={`absolute w-full h-full bg-transparent appearance-none cursor-pointer outline-none
+                        ${isDragging.max ? 'z-20' : 'z-10'}
+                      `}
+                      style={{
+                        background: 'transparent'
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="flex gap-2 mt-3">
+                
+                {/* Number Inputs */}
+                <div className="flex gap-2">
                   <div className="flex-1">
-                    <label className="block text-xs text-[#FFD700] mb-1">Min</label>
+                    <label className="block text-xs text-[#FFD700] mb-1">Min Price</label>
                     <input
                       type="number"
                       min={MIN_PRICE}
@@ -249,7 +296,7 @@ const ProductSidebar = () => {
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="block text-xs text-[#FFD700] mb-1">Max</label>
+                    <label className="block text-xs text-[#FFD700] mb-1">Max Price</label>
                     <input
                       type="number"
                       min={MIN_PRICE}
@@ -263,7 +310,7 @@ const ProductSidebar = () => {
                 </div>
               </div>
 
-              {/* Material - Only this remains from the removed filters */}
+              {/* Material */}
               <FilterCheckboxSection
                 title="Material"
                 options={MATERIALS}
@@ -344,35 +391,56 @@ const ProductSidebar = () => {
         </div>
       </div>
 
-      {/* Styles */}
+      {/* Custom Styles */}
       <style jsx>{`
-        .slider-thumb {
+        input[type="range"] {
           -webkit-appearance: none;
           appearance: none;
           background: transparent;
-          cursor: grab;
+          cursor: pointer;
         }
-        .slider-thumb:active { cursor: grabbing; }
-        .slider-thumb::-webkit-slider-thumb {
-          -webkit-appearance: none; appearance: none;
-          height: 20px; width: 20px; border-radius: 50%;
-          background: #FFD700; cursor: grab;
-          border: 3px solid #000;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-          transition: all 0.15s;
+
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          height: 18px;
+          width: 18px;
+          border-radius: 50%;
+          background: #FFD700;
+          cursor: pointer;
+          border: 2px solid #000;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          transition: all 0.15s ease;
         }
-        .slider-thumb:active::-webkit-slider-thumb {
-          cursor: grabbing; transform: scale(1.1);
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+          transform: scale(1.1);
+          box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
         }
-        .slider-thumb::-moz-range-thumb {
-          height: 20px; width: 20px; border-radius: 50%;
-          background: #FFD700; cursor: grab;
-          border: 3px solid #000;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+
+        input[type="range"]::-webkit-slider-thumb:active {
+          transform: scale(1.15);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
         }
-        .slider-thumb:active::-moz-range-thumb { transform: scale(1.1); }
-        .hidescroll { scrollbar-width: none; -ms-overflow-style: none; }
-        .hidescroll::-webkit-scrollbar { display: none; }
+
+        input[type="range"]::-moz-range-thumb {
+          height: 18px;
+          width: 18px;
+          border-radius: 50%;
+          background: #FFD700;
+          cursor: pointer;
+          border: 2px solid #000;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .hidescroll {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .hidescroll::-webkit-scrollbar {
+          display: none;
+        }
       `}</style>
     </>
   );
