@@ -271,9 +271,7 @@ const Products = () => {
           {/* Product Info */}
           <div className="text-xs text-gray-500">
             <div>Total: {totalProducts} | Page: {currentPage}/{totalPages}</div>
-            {filters.category && (
-              <div>Active Category: {filters.category.name}</div>
-            )}
+           
           </div>
         </div>
 
