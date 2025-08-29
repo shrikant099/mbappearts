@@ -57,7 +57,7 @@ export const login = async (req, res) => {
     const user = await User.findOne({ phone });
 
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid phone or password' });
+      return res.status(401).json({ success: false, message: 'Account is not available with this phone number' });
     }
     if(user.isActive === false){
       return res.status(403).json({ success: false, message: 'Your account is deactivated. Please contact support.' });
@@ -65,7 +65,7 @@ export const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid  password' });
+      return res.status(401).json({ success: false, message: 'Wrong password' });
     }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });

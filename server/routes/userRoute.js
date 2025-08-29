@@ -19,8 +19,8 @@ userRouter.get('/admin-dashboard', protect, getAdminDashboardStats)
 userRouter.get('/getuser', protect, getUsers)
 userRouter.get('/getUserNoPagination', protect, getUserNoPagination)
 userRouter.get('/me', protect, getMe);
-// userRouter.put('/deactivate/:userId', protect, restrictTo('admin'), deactivateSingleUser);
-// userRouter.put('/activate/:userId', protect, restrictTo('admin'), activateSingleUser);
+userRouter.put('/deactivate/:userId', protect, restrictTo('admin'), deactivateSingleUser);
+userRouter.put('/activate/:userId', protect, restrictTo('admin'), activateSingleUser);
 
 //mail sender route
 
