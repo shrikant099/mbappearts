@@ -17,6 +17,11 @@ export const endpoints = {
   contactUs : BASE_URL + '/api/user/send-email',
   resetPassword : BASE_URL + '/api/user/reset-password',
   forgotPassword : BASE_URL + '/api/user/forgot-password',
+  addProductToWishlist : BASE_URL + '/api/user/wishlist',
+  removeProductFromWishlist : BASE_URL + '/api/user/wishlist/',
+  getWishlistItems : BASE_URL + '/api/user/wishlist',
+  clearWishlist : BASE_URL + '/api/user/wishlist',
+
 }
 
 //category endpoints
