@@ -16,7 +16,7 @@ const router = express.Router();
 // Protected routes (require authentication)
 router.post('/:id', protect, addToCart);
 router.delete('/:id', protect, removeFromCart);
-router.get('/:id', protect, getCart);
+router.get('/:id',  getCart);
 router.put('/:id', protect, updateCartItem);
 router.delete('/:id/clear', protect, clearCart);
 router.post('/:id/bulk', protect, bulkAddToCart);

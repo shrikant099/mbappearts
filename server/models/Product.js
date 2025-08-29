@@ -39,7 +39,7 @@ const productSchema = new mongoose.Schema({
   // Furniture Properties
   roomType: { 
     type: [String], 
-    enum: ['Living Room', 'Bedroom', 'Dining Room', 'Kitchen', 'Bathroom', 'Office', 'Outdoor', 'Entryway', 'Kids Room', 'Other']
+    enum: ['Living Room', 'Bedroom', 'Dining Room','Gaming Room', 'Kitchen', 'Bathroom', 'Office', 'Outdoor', 'Entryway', 'Kids Room', 'Other']
   },
   style: {
     type: [String],

@@ -12,9 +12,11 @@ import {
   getProductsOnSale,
   addProductReview,
   getProductStats,
-  searchProducts
+  searchProducts,
+  createBulkProducts
 } from '../controllers/productController.js';
 import { protect, restrictTo } from '../middlewares/authUser.js';
+import { bulkAddToCart } from '../controllers/cartController.js';
 // Assuming you have auth middleware
 
 const router = express.Router();
@@ -35,6 +37,8 @@ router.post('/:id/reviews', protect, addProductReview);
 router.post('/add', protect, restrictTo('admin'), createProduct);            // POST /api/products/add
 router.put('/update/:id', protect, restrictTo('admin'), updateProduct);
 router.delete('/:id', protect, restrictTo('admin'), deleteProduct);
+router.post('/bulk', protect, restrictTo('admin'), createBulkProducts); // Example of bulk add to cart
+
 
 export default router;
 

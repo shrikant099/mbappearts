@@ -690,3 +690,91 @@ export const getProductsByStyle = async (req, res) => {
     });
   }
 };
+
+
+
+export const createBulkProducts = async (req, res) => {
+  try {
+    const products = req.body.products; // Expecting an array of products
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No products provided in the request.",
+      });
+    }
+
+    const savedProducts = [];
+
+    for (let productData of products) {
+      // Generate SKU if missing
+      if (!productData.sku) {
+        const prefix = productData.name.substring(0, 3).toUpperCase();
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        productData.sku = `${prefix}-${randomNum}`;
+      }
+
+      // Generate slug if missing
+      if (!productData.slug) {
+        productData.slug = productData.name.toLowerCase()
+          .replace(/ /g, '-')
+          .replace(/[^\w-]+/g, '');
+      }
+
+      // Parse JSON strings
+      if (productData.dimensions && typeof productData.dimensions === 'string') {
+        productData.dimensions = JSON.parse(productData.dimensions);
+      }
+
+      if (productData.features && typeof productData.features === 'string') {
+        productData.features = JSON.parse(productData.features);
+      }
+
+      if (productData.variants && typeof productData.variants === 'string') {
+        productData.variants = JSON.parse(productData.variants);
+      }
+
+      // Handle image uploads
+      const uploadedImages = [];
+
+      // If images are URLs (e.g., dummy data), just use them
+      if (productData.images && Array.isArray(productData.images)) {
+        for (const url of productData.images) {
+          uploadedImages.push({
+            url: url?.url,
+            altText: url?.altText || "Furniture product image"
+          });
+        }
+      }
+
+      // Otherwise, if you're uploading files, you could extend this logic
+      // to handle `req.files` per product, but that’s more complex and
+      // depends on your frontend + formData structure.
+
+      productData.images = uploadedImages;
+      productData.roomSceneImages = uploadedImages.map(img => img.url);
+      const slug = productData.slug;
+      if (slug) {
+        const existingProduct = await Product.findOne({ slug });
+        if (!existingProduct) {
+          const newProduct = new Product(productData);
+          const saved = await newProduct.save();
+          savedProducts.push(saved);
+        }
+      }
+
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: `${savedProducts.length} products created successfully.`,
+      products: savedProducts
+    });
+  } catch (error) {
+    console.error("Bulk product creation error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to create bulk products.",
+    });
+  }
+};
