@@ -1,23 +1,120 @@
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { useState, useEffect } from "react";
 import { setProductData } from "../../slices/productSlice";
-import { Heart, Star } from "lucide-react"; // Optional: replace with your preferred icon lib
+import { Heart, Star } from "lucide-react";
+import { endpoints } from "../../services/api";
+import toast from "react-hot-toast";
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { token } = useSelector((state) => state.auth);
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [isHeartAnimating, setIsHeartAnimating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const discount =
     product?.comparePrice && product.comparePrice > product.price
       ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
       : null;
 
+  // Check if product is in wishlist on component mount
+  useEffect(() => {
+    if (token && product?._id) {
+      checkWishlistStatus();
+    }
+  }, [product._id, token]);
+
+  const checkWishlistStatus = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await fetch(endpoints.getWishlistItems, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const isProductInWishlist = data.wishlist.some(
+          item => item.product._id === product._id
+        );
+        setIsInWishlist(isProductInWishlist);
+      }
+    } catch (error) {
+      console.error('Error checking wishlist status:', error);
+    }
+  };
+
+  const handleWishlistToggle = async (e) => {
+    e.stopPropagation();
+    
+    if (!token) {
+      toast.error('Please login to add items to wishlist');
+      navigate('/login');
+      return;
+    }
+
+    setIsLoading(true);
+    setIsHeartAnimating(true);
+
+    try {
+      let response;
+      
+      if (isInWishlist) {
+        // Remove from wishlist
+        response = await fetch(`${endpoints.removeProductFromWishlist}${product._id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          setIsInWishlist(false);
+          toast.success('Removed from wishlist');
+        } else {
+          const errorData = await response.json();
+          toast.error(errorData.message || 'Failed to remove from wishlist');
+        }
+      } else {
+        // Add to wishlist
+        response = await fetch(endpoints.addProductToWishlist, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ productId: product._id }),
+        });
+
+        if (response.ok) {
+          setIsInWishlist(true);
+          toast.success('Added to wishlist!');
+        } else {
+          const errorData = await response.json();
+          toast.error(errorData.message || 'Failed to add to wishlist');
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => setIsHeartAnimating(false), 600);
+    }
+  };
+
   const handleClick = () => {
     dispatch(setProductData(product));
     navigate("/productdetail");
   };
 
-  // Optionally use a fallback if no image is present
   const productImage = product?.images?.[0]?.url || "/placeholder.jpg";
 
   return (
@@ -32,11 +129,20 @@ const ProductCard = ({ product }) => {
           className="w-full h-[230px] object-cover rounded-lg group-hover:brightness-105 group-hover:shadow-xl transition duration-300"
         />
         <button
-          className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm p-2 rounded-full text-red-500 z-10 hover:bg-[#FFD700]/50 hover:text-[#191919] transition"
+          className={`absolute top-4 right-4 backdrop-blur-sm p-2 rounded-full z-200 transition-all duration-300 ${
+            isInWishlist 
+              ? 'bg-red-500/80 text-white shadow-lg shadow-red-500/20' 
+              : 'bg-black/70 text-red-500 hover:bg-[#FFD700]/50 hover:text-[#191919]'
+          } ${isHeartAnimating ? 'animate-bounce scale-110' : ''} ${isLoading ? 'opacity-70' : ''}`}
           type="button"
-          onClick={e => e.stopPropagation()} // So not to trigger card click
+          onClick={handleWishlistToggle}
+          disabled={isLoading}
         >
-          <Heart className="w-5 h-5" />
+          <Heart 
+            className={`w-5 h-5 transition-all duration-300 ${
+              isInWishlist ? 'fill-current scale-110' : ''
+            } ${isHeartAnimating ? 'animate-pulse' : ''}`} 
+          />
         </button>
         {discount && (
           <span className="absolute top-4 left-4 px-2 py-1 bg-gradient-to-r from-[#FFD700]/90 to-yellow-500 text-black text-xs font-bold rounded-full shadow-lg animate-pulse">

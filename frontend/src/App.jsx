@@ -35,6 +35,7 @@ import OnSale from "./pages/Onsale";
 import FAQ from "./pages/Faq";
 import SupportCenter from "./pages/SupportCenter";
 import CustomerCareGuide from "./pages/CareGuide";
+import Wishlist from "./pages/Wishlist";
 
 const App = () => {
   
@@ -96,6 +97,7 @@ const App = () => {
             <Route path="/onsale" element={<OnSale/>}/>
             <Route path="/faq" element={<FAQ/>}/>
              <Route path="/support" element={<SupportCenter/>}/>
+             <Route path="/wishlist" element={<Wishlist/>}/>
             <Route path="/care-guide" element={<CustomerCareGuide/>}/>
             
           <Route

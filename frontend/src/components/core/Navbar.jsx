@@ -508,6 +508,15 @@ const Navbar = () => {
           </li>
           <li 
             onClick={() => {
+              
+              navigate('/wishlist');
+            }} 
+            className="hover:scale-105 cursor-pointer"
+          >
+            Wishlist
+          </li>
+          <li 
+            onClick={() => {
               dispatch(clearFilters());
               navigate('/products');
             }} 
