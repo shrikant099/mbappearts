@@ -21,7 +21,8 @@ export const endpoints = {
   removeProductFromWishlist : BASE_URL + '/api/user/wishlist/',
   getWishlistItems : BASE_URL + '/api/user/wishlist',
   clearWishlist : BASE_URL + '/api/user/wishlist',
-
+  deactivateSingleUser : BASE_URL + '/api/user/deactivate/',
+  activateSingleUser : BASE_URL + '/api/user/activate/'
 }
 
 //category endpoints

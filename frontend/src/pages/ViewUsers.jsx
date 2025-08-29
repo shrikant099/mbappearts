@@ -2,14 +2,15 @@ import React, { useEffect, useState, useRef } from 'react';
 import { apiConnector } from '../services/apiConnector';
 import { endpoints } from '../services/api';
 import { toast } from 'react-hot-toast';
-import { Eye, X, Search, Users } from 'lucide-react';
+import { Eye, X, Search, Users, UserCheck, UserX } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
 const ViewUsers = () => {
-  const [allUsers, setAllUsers] = useState([]); // All users from API
-  const [filteredUsers, setFilteredUsers] = useState([]); // Filtered users for display
+  const [allUsers, setAllUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState({}); // Track loading for individual actions
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -17,6 +18,84 @@ const ViewUsers = () => {
 
   const token = useSelector(state => state.auth.token);
 
+  // Add these action functions
+  const handleActivateUser = async (userId) => {
+    try {
+      setActionLoading(prev => ({ ...prev, [userId]: true }));
+      
+      const res = await apiConnector(
+        "PUT",
+        `${endpoints.activateSingleUser}${userId}`,
+        null,
+        {
+          Authorization: `Bearer ${token}`
+        }
+      );
+
+      if (res.data.success) {
+        toast.success("User activated successfully");
+        
+        // Update user in both allUsers and filteredUsers
+        setAllUsers(prevUsers => 
+          prevUsers.map(user => 
+            user._id === userId ? { ...user, isActive: true } : user
+          )
+        );
+        setFilteredUsers(prevUsers => 
+          prevUsers.map(user => 
+            user._id === userId ? { ...user, isActive: true } : user
+          )
+        );
+      } else {
+        toast.error(res.data.message || "Failed to activate user");
+      }
+    } catch (error) {
+      console.error('Error activating user:', error);
+      toast.error("Failed to activate user");
+    } finally {
+      setActionLoading(prev => ({ ...prev, [userId]: false }));
+    }
+  };
+
+  const handleDeactivateUser = async (userId) => {
+    try {
+      setActionLoading(prev => ({ ...prev, [userId]: true }));
+      
+      const res = await apiConnector(
+        "PUT",
+        `${endpoints.deactivateSingleUser}${userId}`,
+        null,
+        {
+          Authorization: `Bearer ${token}`
+        }
+      );
+
+      if (res.data.success) {
+        toast.success("User deactivated successfully");
+        
+        // Update user in both allUsers and filteredUsers
+        setAllUsers(prevUsers => 
+          prevUsers.map(user => 
+            user._id === userId ? { ...user, isActive: false } : user
+          )
+        );
+        setFilteredUsers(prevUsers => 
+          prevUsers.map(user => 
+            user._id === userId ? { ...user, isActive: false } : user
+          )
+        );
+      } else {
+        toast.error(res.data.message || "Failed to deactivate user");
+      }
+    } catch (error) {
+      console.error('Error deactivating user:', error);
+      toast.error("Failed to deactivate user");
+    } finally {
+      setActionLoading(prev => ({ ...prev, [userId]: false }));
+    }
+  };
+
+  // Your existing functions remain the same...
   const fetchUsers = async (page = 1) => {
     try {
       setLoading(true);
@@ -30,17 +109,14 @@ const ViewUsers = () => {
         }
       );
 
-      console.log('API Response:', res);
-
       if (res.data.success) {
         const users = res.data.users || [];
         setAllUsers(users);
-        setFilteredUsers(users); // Initially show all users
+        setFilteredUsers(users);
         setCurrentPage(res.data.currentPage || page);
         setTotalPages(res.data.totalPages || 1);
         setTotalUsers(res.data.totalUsers || 0);
       } else {
-        console.error('API returned unsuccessful response:', res.data);
         toast.error(res.data.message || "Failed to load users");
         setAllUsers([]);
         setFilteredUsers([]);
@@ -61,20 +137,17 @@ const ViewUsers = () => {
     }
   };
 
-  // Initial fetch on component mount
+  // Keep all your existing useEffects and handlers...
   useEffect(() => {
     if (token) {
       fetchUsers(1);
     }
   }, [token]);
 
-  // Client-side filtering effect
   useEffect(() => {
     if (!searchQuery.trim()) {
-      // If no search query, show all users
       setFilteredUsers(allUsers);
     } else {
-      // Filter users based on search query
       const filtered = allUsers.filter(user => {
         const name = user.name ? user.name.toLowerCase() : '';
         const phone = user.phone ? String(user.phone).toLowerCase() : '';
@@ -111,7 +184,7 @@ const ViewUsers = () => {
           </h1>
         </div>
 
-        {/* Search Bar */}
+        {/* Search Bar - Keep existing */}
         <div className="mb-4 sm:mb-6 max-w-md mx-auto">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -134,7 +207,6 @@ const ViewUsers = () => {
             )}
           </div>
 
-          {/* Search Results Summary */}
           {!loading && (
             <div className="mt-2 text-xs sm:text-sm text-gray-600 text-center">
               {searchQuery.trim() ? (
@@ -156,22 +228,23 @@ const ViewUsers = () => {
           )}
         </div>
 
-        {/* Desktop Table View - Hidden on mobile */}
+        {/* Desktop Table View - UPDATED with Action column */}
         <div className="hidden lg:block overflow-x-auto shadow-lg rounded-lg mb-6">
-          <table className="min-w-[700px] w-full bg-white rounded">
+          <table className="min-w-[800px] w-full bg-white rounded">
             <thead className="bg-[#FFD770] text-[#222]">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold">Sr. No.</th>
                 <th className="px-4 py-3 text-left font-semibold">Name</th>
                 <th className="px-4 py-3 text-left font-semibold">Phone</th>
+                <th className="px-4 py-3 text-left font-semibold">Status</th>
                 <th className="px-4 py-3 text-left font-semibold">Orders</th>
-                <th className="px-4 py-3 text-left font-semibold">Action</th>
+                <th className="px-4 py-3 text-left font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-4 py-8 text-center">
+                  <td colSpan="6" className="px-4 py-8 text-center">
                     <div className="flex items-center justify-center">
                       <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#FFD770] border-t-transparent mr-2"></div>
                       Loading users...
@@ -180,7 +253,6 @@ const ViewUsers = () => {
                 </tr>
               ) : filteredUsers.length > 0 ? (
                 filteredUsers.map((user, idx) => {
-                  // Calculate the actual serial number based on current page and original position
                   const originalIndex = allUsers.findIndex(u => u._id === user._id);
                   const serialNumber = (currentPage - 1) * 10 + originalIndex + 1;
                   
@@ -188,7 +260,6 @@ const ViewUsers = () => {
                     <tr key={user._id} className="border-t hover:bg-[#f5f5f5] transition duration-300">
                       <td className="px-4 py-3">{serialNumber}</td>
                       <td className="px-4 py-3 font-medium">
-                        {/* Highlight search term in name */}
                         {searchQuery && user.name && user.name.toLowerCase().includes(searchQuery.toLowerCase()) ? (
                           <span
                             dangerouslySetInnerHTML={{
@@ -203,7 +274,6 @@ const ViewUsers = () => {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        {/* Highlight search term in phone */}
                         {searchQuery && user.phone && String(user.phone).toLowerCase().includes(searchQuery.toLowerCase()) ? (
                           <span
                             dangerouslySetInnerHTML={{
@@ -218,25 +288,64 @@ const ViewUsers = () => {
                         )}
                       </td>
                       <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          user.isActive 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {user.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
                         <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
                           {user.totalOrders || 0}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          className="bg-[#FFD770] text-black px-3 py-2 rounded-md hover:brightness-110 transition hover:scale-105 flex items-center gap-1 font-medium"
-                          onClick={() => setSelectedUser(user)}
-                        >
-                          <Eye size={16} />
-                          View
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            className="bg-[#FFD770] text-black px-3 py-2 rounded-md hover:brightness-110 transition hover:scale-105 flex items-center gap-1 font-medium"
+                            onClick={() => setSelectedUser(user)}
+                          >
+                            <Eye size={16} />
+                            View
+                          </button>
+                          
+                          {user.isActive ? (
+                            <button
+                              className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 transition hover:scale-105 flex items-center gap-1 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={() => handleDeactivateUser(user._id)}
+                              disabled={actionLoading[user._id]}
+                            >
+                              {actionLoading[user._id] ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                              ) : (
+                                <UserX size={16} />
+                              )}
+                              Deactivate
+                            </button>
+                          ) : (
+                            <button
+                              className="bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600 transition hover:scale-105 flex items-center gap-1 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={() => handleActivateUser(user._id)}
+                              disabled={actionLoading[user._id]}
+                            >
+                              {actionLoading[user._id] ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                              ) : (
+                                <UserCheck size={16} />
+                              )}
+                              Activate
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
                     <div className="flex flex-col items-center">
                       <Users size={48} className="text-gray-300 mb-2" />
                       <p className="text-lg font-medium">No users found</p>
@@ -256,7 +365,7 @@ const ViewUsers = () => {
           </table>
         </div>
 
-        {/* Mobile/Tablet Card View - Hidden on desktop */}
+        {/* Mobile/Tablet Card View - UPDATED with Action buttons */}
         <div className="lg:hidden mb-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -277,6 +386,13 @@ const ViewUsers = () => {
                           <span className="text-xs bg-gray-100 px-2 py-1 rounded font-medium">#{serialNumber}</span>
                           <span className="bg-[#FFD770] text-black px-2 py-1 rounded text-xs font-medium">
                             {user.totalOrders || 0} Orders
+                          </span>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            user.isActive 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {user.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </div>
                         <h3 className="font-bold text-lg text-gray-800 mb-1">
@@ -310,7 +426,7 @@ const ViewUsers = () => {
                       </div>
                     </div>
                     
-                    <div className="pt-3 border-t border-gray-200">
+                    <div className="pt-3 border-t border-gray-200 space-y-2">
                       <button
                         className="w-full bg-[#FFD770] text-black py-3 px-4 rounded-md hover:brightness-110 transition font-medium flex items-center justify-center gap-2"
                         onClick={() => setSelectedUser(user)}
@@ -318,6 +434,34 @@ const ViewUsers = () => {
                         <Eye size={18} />
                         View Details
                       </button>
+                      
+                      {user.isActive ? (
+                        <button
+                          className="w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-600 transition font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() => handleDeactivateUser(user._id)}
+                          disabled={actionLoading[user._id]}
+                        >
+                          {actionLoading[user._id] ? (
+                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                          ) : (
+                            <UserX size={18} />
+                          )}
+                          Deactivate User
+                        </button>
+                      ) : (
+                        <button
+                          className="w-full bg-green-500 text-white py-3 px-4 rounded-md hover:bg-green-600 transition font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() => handleActivateUser(user._id)}
+                          disabled={actionLoading[user._id]}
+                        >
+                          {actionLoading[user._id] ? (
+                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                          ) : (
+                            <UserCheck size={18} />
+                          )}
+                          Activate User
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -339,7 +483,7 @@ const ViewUsers = () => {
           )}
         </div>
 
-        {/* Pagination Controls */}
+        {/* Keep existing pagination and modal code... */}
         {totalPages > 1 && !loading && (
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-6">
             <button
@@ -351,7 +495,6 @@ const ViewUsers = () => {
             </button>
 
             <div className="flex items-center gap-2 flex-wrap justify-center">
-              {/* Page numbers */}
               {[...Array(Math.min(5, totalPages))].map((_, i) => {
                 let pageNum;
                 if (totalPages <= 5) {
@@ -403,7 +546,7 @@ const ViewUsers = () => {
         </div>
       </div>
 
-      {/*  || 'N/A' */}
+      {/* User Details Modal - keep existing */}
       {selectedUser && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">
           <div className="bg-[#111] text-[#FFD770] max-w-xl w-full rounded-lg p-4 sm:p-6 overflow-y-auto max-h-[90vh] shadow-[0_0_20px_rgba(255,215,112,0.3)] animate-scale-in border border-[#FFD770]/30">
@@ -418,46 +561,90 @@ const ViewUsers = () => {
             </div>
 
             <div className="space-y-3 text-sm sm:text-base tracking-wide leading-relaxed">
-  <p><span className="font-semibold">Name:</span> {selectedUser?.name || 'N/A'}</p>
-  <p><span className="font-semibold">Phone:</span> {selectedUser?.phone || 'N/A'}</p>
-  <p><span className="font-semibold">Total Orders:</span> {selectedUser?.totalOrders || 0}</p>
-  <p><span className="font-semibold">Total Spent:</span> ₹{selectedUser?.totalSpent ? selectedUser.totalSpent.toLocaleString() : '0'}</p>
+              <p><span className="font-semibold">Name:</span> {selectedUser?.name || 'N/A'}</p>
+              <p><span className="font-semibold">Phone:</span> {selectedUser?.phone || 'N/A'}</p>
+              <p><span className="font-semibold">Status:</span> 
+                <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${
+                  selectedUser?.isActive 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {selectedUser?.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </p>
+              <p><span className="font-semibold">Total Orders:</span> {selectedUser?.totalOrders || 0}</p>
+              <p><span className="font-semibold">Total Spent:</span> ₹{selectedUser?.totalSpent ? selectedUser.totalSpent.toLocaleString() : '0'}</p>
 
-  {selectedUser?.profile ? (
-    <>
-      <p><span className="font-semibold">Age:</span> {selectedUser.profile.age || 'N/A'}</p>
-      <p><span className="font-semibold">Gender:</span> {selectedUser.profile.gender || 'N/A'}</p>
-      <p>
-        <span className="font-semibold">DOB:</span> {
-          selectedUser.profile.dateOfBirth 
-            ? new Date(selectedUser.profile.dateOfBirth).toLocaleDateString('en-IN')
-            : 'N/A'
-        }
-      </p>
-      <p><span className="font-semibold">Occupation:</span> {selectedUser.profile.occupation || 'N/A'}</p>
-      <p><span className="font-semibold">Bio:</span> {selectedUser.profile.bio || 'N/A'}</p>
-      
-      <div>
-        <span className="font-semibold">Address:</span>
-        <p className="ml-2 mt-1 text-[#FFD770]/90 leading-normal">
-          {[
-            selectedUser.profile.address,
-            selectedUser.profile.city,
-            selectedUser.profile.state,
-            selectedUser.profile.zipCode,
-            selectedUser.profile.country
-          ].filter(Boolean).join(', ') || 'N/A'}
-        </p>
-      </div>
-    </>
-  ) : (
-    <p className="italic text-[#FFD770]/70">No profile information available.</p>
-  )}
-</div>
+              {selectedUser?.profile ? (
+                <>
+                  <p><span className="font-semibold">Age:</span> {selectedUser.profile.age || 'N/A'}</p>
+                  <p><span className="font-semibold">Gender:</span> {selectedUser.profile.gender || 'N/A'}</p>
+                  <p>
+                    <span className="font-semibold">DOB:</span> {
+                      selectedUser.profile.dateOfBirth 
+                        ? new Date(selectedUser.profile.dateOfBirth).toLocaleDateString('en-IN')
+                        : 'N/A'
+                    }
+                  </p>
+                  <p><span className="font-semibold">Occupation:</span> {selectedUser.profile.occupation || 'N/A'}</p>
+                  <p><span className="font-semibold">Bio:</span> {selectedUser.profile.bio || 'N/A'}</p>
+                  
+                  <div>
+                    <span className="font-semibold">Address:</span>
+                    <p className="ml-2 mt-1 text-[#FFD770]/90 leading-normal">
+                      {[
+                        selectedUser.profile.address,
+                        selectedUser.profile.city,
+                        selectedUser.profile.state,
+                        selectedUser.profile.zipCode,
+                        selectedUser.profile.country
+                      ].filter(Boolean).join(', ') || 'N/A'}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <p className="italic text-[#FFD770]/70">No profile information available.</p>
+              )}
+            </div>
 
+            {/* Action buttons in modal */}
+            <div className="mt-6 pt-4 border-t border-[#FFD770]/20">
+              {selectedUser?.isActive ? (
+                <button
+                  className="w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-600 transition font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => {
+                    handleDeactivateUser(selectedUser._id);
+                    setSelectedUser(null);
+                  }}
+                  disabled={actionLoading[selectedUser._id]}
+                >
+                  {actionLoading[selectedUser._id] ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                  ) : (
+                    <UserX size={18} />
+                  )}
+                  Deactivate User
+                </button>
+              ) : (
+                <button
+                  className="w-full bg-green-500 text-white py-3 px-4 rounded-md hover:bg-green-600 transition font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => {
+                    handleActivateUser(selectedUser._id);
+                    setSelectedUser(null);
+                  }}
+                  disabled={actionLoading[selectedUser._id]}
+                >
+                  {actionLoading[selectedUser._id] ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                  ) : (
+                    <UserCheck size={18} />
+                  )}
+                  Activate User
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Custom Animation */}
           <style jsx>{`
             @keyframes scale-in {
               0% { transform: scale(0.92); opacity: 0; }
