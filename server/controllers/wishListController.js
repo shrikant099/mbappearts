@@ -96,7 +96,15 @@ export const getWishlistItems = async (req, res) => {
   const userId = req.user._id; // Assuming user ID is available from authentication middleware
 
   try {
-    const user = await User.findById(userId).populate('wishlistItems.product');
+const user = await User.findById(userId)
+  .populate({
+    path: 'wishlistItems.product',
+    populate: [
+      { path: 'brand' },
+      { path: 'category' }
+    ]
+  });
+
     
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
