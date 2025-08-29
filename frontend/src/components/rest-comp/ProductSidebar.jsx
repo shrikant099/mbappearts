@@ -236,7 +236,7 @@ const ProductSidebar = () => {
                     />
                   </div>
                   
-                  {/* Min Slider */}
+                  {/* Min Slider
                   <div className="absolute top-0 left-0 right-0 h-full flex items-center">
                     <input
                       type="range"
@@ -256,7 +256,7 @@ const ProductSidebar = () => {
                         background: 'transparent'
                       }}
                     />
-                  </div>
+                  </div> */}
                   
                   {/* Max Slider */}
                   <div className="absolute top-0 left-0 right-0 h-full flex items-center">
