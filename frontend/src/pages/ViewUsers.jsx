@@ -403,7 +403,7 @@ const ViewUsers = () => {
         </div>
       </div>
 
-      {/* Modal */}
+      {/*  || 'N/A' */}
       {selectedUser && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">
           <div className="bg-[#111] text-[#FFD770] max-w-xl w-full rounded-lg p-4 sm:p-6 overflow-y-auto max-h-[90vh] shadow-[0_0_20px_rgba(255,215,112,0.3)] animate-scale-in border border-[#FFD770]/30">
@@ -418,30 +418,43 @@ const ViewUsers = () => {
             </div>
 
             <div className="space-y-3 text-sm sm:text-base tracking-wide leading-relaxed">
-              <p><span className="font-semibold">Name:</span> {selectedUser.name}</p>
-              <p><span className="font-semibold">Phone:</span> {selectedUser.phone}</p>
-              <p><span className="font-semibold">Total Orders:</span> {selectedUser.totalOrders}</p>
-              <p><span className="font-semibold">Total Spent:</span> ₹{selectedUser.totalSpent}</p>
+  <p><span className="font-semibold">Name:</span> {selectedUser?.name || 'N/A'}</p>
+  <p><span className="font-semibold">Phone:</span> {selectedUser?.phone || 'N/A'}</p>
+  <p><span className="font-semibold">Total Orders:</span> {selectedUser?.totalOrders || 0}</p>
+  <p><span className="font-semibold">Total Spent:</span> ₹{selectedUser?.totalSpent ? selectedUser.totalSpent.toLocaleString() : '0'}</p>
 
-              {selectedUser.profile ? (
-                <>
-                  <p><span className="font-semibold">Age:</span> {selectedUser.profile.age}</p>
-                  <p><span className="font-semibold">Gender:</span> {selectedUser.profile.gender}</p>
-                  <p><span className="font-semibold">DOB:</span> {new Date(selectedUser.profile.dateOfBirth).toLocaleDateString()}</p>
-                  <p><span className="font-semibold">Occupation:</span> {selectedUser.profile.occupation}</p>
-                  <p><span className="font-semibold">Bio:</span> {selectedUser.profile.bio}</p>
-                  <div>
-                    <span className="font-semibold">Address:</span>
-                    <p className="ml-2 mt-1 text-[#FFD770]/90">
-                      {selectedUser.profile.address}, {selectedUser.profile.city},<br />
-                      {selectedUser.profile.state}, {selectedUser.profile.zipCode}, {selectedUser.profile.country}
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <p className="italic text-[#FFD770]/70">No profile information available.</p>
-              )}
-            </div>
+  {selectedUser?.profile ? (
+    <>
+      <p><span className="font-semibold">Age:</span> {selectedUser.profile.age || 'N/A'}</p>
+      <p><span className="font-semibold">Gender:</span> {selectedUser.profile.gender || 'N/A'}</p>
+      <p>
+        <span className="font-semibold">DOB:</span> {
+          selectedUser.profile.dateOfBirth 
+            ? new Date(selectedUser.profile.dateOfBirth).toLocaleDateString('en-IN')
+            : 'N/A'
+        }
+      </p>
+      <p><span className="font-semibold">Occupation:</span> {selectedUser.profile.occupation || 'N/A'}</p>
+      <p><span className="font-semibold">Bio:</span> {selectedUser.profile.bio || 'N/A'}</p>
+      
+      <div>
+        <span className="font-semibold">Address:</span>
+        <p className="ml-2 mt-1 text-[#FFD770]/90 leading-normal">
+          {[
+            selectedUser.profile.address,
+            selectedUser.profile.city,
+            selectedUser.profile.state,
+            selectedUser.profile.zipCode,
+            selectedUser.profile.country
+          ].filter(Boolean).join(', ') || 'N/A'}
+        </p>
+      </div>
+    </>
+  ) : (
+    <p className="italic text-[#FFD770]/70">No profile information available.</p>
+  )}
+</div>
+
           </div>
 
           {/* Custom Animation */}
