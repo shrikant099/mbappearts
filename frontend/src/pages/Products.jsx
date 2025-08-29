@@ -196,9 +196,9 @@ const Products = () => {
 
   // Handle page changes
   useEffect(() => {
-    if (currentPage > 1) {
+    
       getAllProducts(currentPage, false);
-    }
+    
   }, [currentPage, getAllProducts]);
 
   // Check if filters are empty
