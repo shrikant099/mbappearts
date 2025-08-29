@@ -8,6 +8,7 @@ import { updateFilter, clearFilters } from "../../slices/filterSlice";
 import { setIsOpen } from "../../slices/productSlice";
 // Removed ROOM_TYPES and STYLES imports
 import { MATERIALS } from "../../slices/filterSlice";
+import { clearSearchData } from "../../slices/searchSlice";
 
 const { getAllCategory } = categoryEndpoints;
 
@@ -54,6 +55,7 @@ const ProductSidebar = () => {
   }, [filters.priceRange]);
 
   const handleCategoryChange = (categoryId) => {
+    dispatch(clearSearchData())
     dispatch(updateFilter({ type: "category", value: categoryId, checked: true }));
   };
 

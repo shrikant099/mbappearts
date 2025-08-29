@@ -30,7 +30,7 @@ const Products = () => {
   const loading = useSelector((state) => state.auth.loading);
   const filters = useSelector((state) => state.filters);
  const search = useSelector((state) => state.search.searchQuery);
- 
+
   const handlePageChange = useCallback((pageNum) => {
     setCurrentPage(pageNum);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -272,7 +272,7 @@ const Products = () => {
           <div className="text-xs text-gray-500">
             <div>Total: {totalProducts} | Page: {currentPage}/{totalPages}</div>
             {filters.category && (
-              <div>Active Category: {filters.category}</div>
+              <div>Active Category: {filters.category.name}</div>
             )}
           </div>
         </div>
