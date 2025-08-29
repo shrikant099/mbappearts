@@ -29,8 +29,8 @@ const Products = () => {
 
   const loading = useSelector((state) => state.auth.loading);
   const filters = useSelector((state) => state.filters);
-  const search = useSelector((state) => state.filters.searchQuery);
-
+ const search = useSelector((state) => state.search.searchQuery);
+ 
   const handlePageChange = useCallback((pageNum) => {
     setCurrentPage(pageNum);
     window.scrollTo({ top: 0, behavior: "smooth" });
