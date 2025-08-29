@@ -407,7 +407,9 @@ const Profile = () => {
       setLoading(true);
       const response = await apiConnector(
         "GET",
-        `${endpoints.getProfile}${user._id}`
+        `${endpoints.getProfile}${user._id}`,
+        null,
+        {Authorization : `Bearer ${token}`}
       );
       if (response.data.success) {
         setProfileData(response.data.user);
@@ -754,7 +756,8 @@ const downloadReceiptAsPDF = (order) => {
       const response = await apiConnector(
         "PUT",
         `${endpoints.updateProfile}${user._id}`,
-        updateData
+        updateData,
+        {Authorization : `Bearer ${token}`}
       );
 
       if (response.data.success) {
@@ -800,7 +803,8 @@ const downloadReceiptAsPDF = (order) => {
       const response = await apiConnector(
         "PATCH",
         `${endpoints.updatePicture}${user._id}`,
-        formData
+        formData,
+        {Authorization : `Bearer ${token}`}
       );
       if (response.data.success) {
         toast.success("Profile Picture Updated!");

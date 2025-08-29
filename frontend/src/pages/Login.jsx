@@ -111,7 +111,7 @@ export default function Login() {
       }
     } catch (err) {
       console.log(err);
-      toast.error("Unable to login!");
+      toast.error(err.response.data.message);
     } finally {
       dispatch(setLoading(false));
     }
