@@ -25,6 +25,22 @@ const cartItemSchema = new mongoose.Schema({
   }
 }, { _id: false });
 
+
+
+const wishlistSchema = new mongoose.Schema({
+  product: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+    required: true
+  },
+  addedAt: {
+    type: Date,
+    default: Date.now
+  }
+}, { _id: false });
+
+
+
 const userSchema = new mongoose.Schema({
     name: {type: String, required: true },
     phone: {type: Number, required: true, unique: true,minlength: 10, maxlength: 10 },
@@ -32,6 +48,7 @@ const userSchema = new mongoose.Schema({
     image:{type:String},
     accountType: {type: String, default: 'user'},
      cartItems: [cartItemSchema],
+     wishlistItems: [wishlistSchema], 
        profile: {
         email: { type: String },
         address: { type: String, default: '' },

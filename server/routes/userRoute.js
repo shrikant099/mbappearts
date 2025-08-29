@@ -1,6 +1,6 @@
 import express from 'express';
 import { activateSingleUser, deactivateSingleUser, forgotPassword, getAdminDashboardStats, getMe, getProfile, getUserNoPagination, getUsers, isAuth, login, logout, register, resetPassword, sendOTPToPhone, updatePicture, updateProfile } from '../controllers/userController.js';
-
+import { addProductToWishlist, clearWishlist, getWishlistItems, removeProductFromWishlist } from '../controllers/wishListController.js';
 import { protect, restrictTo } from '../middlewares/authUser.js';
 import { sendEmail } from '../controllers/contact.js';
 
@@ -27,5 +27,11 @@ userRouter.get('/me', protect, getMe);
 userRouter.post('/send-email', sendEmail);
 userRouter.post('/reset-password', resetPassword);
 
+
+//wishlist routes
+userRouter.post('/wishlist', protect, addProductToWishlist);
+userRouter.delete('/wishlist/:productId', protect, removeProductFromWishlist);
+userRouter.get('/wishlist', protect, getWishlistItems);
+userRouter.delete('/wishlist', protect, clearWishlist);
 
 export default userRouter
