@@ -86,6 +86,8 @@ export default function ProductDetail() {
     selectedColor: selectedColor || (product.color && product.color[0]) || "",
     selectedMaterial: selectedMaterial || (product.material && product.material[0]) || "",
     selectedSize: selectedSize || "Standard",
+    freeShipping: product.freeShipping || false,
+    flatShippingRate: product.flatShippingRate || 0,
     selectedVariant,
     quantity: 1,
   };
@@ -140,6 +142,8 @@ export default function ProductDetail() {
       selectedMaterial: selectedMaterial || (product.material && product.material[0]) || "",
       selectedSize: selectedSize || "Standard",
       selectedVariant: selectedVariant || null,
+       freeShipping: product.freeShipping || false,
+    flatShippingRate: product.flatShippingRate || 0,
       quantity: 1, // Default quantity for new items
     };
 

@@ -101,22 +101,31 @@ const AddProduct = () => {
   const [videoFile, setVideoFile] = useState(null);
   const [dimensionDiagramFile, setDimensionDiagramFile] = useState(null);
 
-  // Define required fields
-  const requiredFields = {
-    name: "Product Name",
-    description: "Description",
-    price: "Price",
-    stock: "Stock",
-    category: "Category",
-    color: "Color",
-    // Array field - at least one color required
-    costPerItem : "Cost Per Item",
-    comparePrice : "Compare Price",
+  // Define required fields with conditional logic
+  const getRequiredFields = () => {
+    const baseRequiredFields = {
+      name: "Product Name",
+      description: "Description",
+      price: "Price",
+      stock: "Stock",
+      category: "Category",
+      color: "Color",
+      costPerItem: "Cost Per Item",
+      comparePrice: "Compare Price",
+    };
+
+    // Add flatShippingRate as required only if free shipping is false
+    if (formData.freeShipping === false) {
+      baseRequiredFields.flatShippingRate = "Flat Shipping Rate";
+    }
+
+    return baseRequiredFields;
   };
 
   // Validation function
   const validateForm = () => {
     const errors = {};
+    const requiredFields = getRequiredFields();
     
     // Check text/number required fields
     Object.keys(requiredFields).forEach(field => {
@@ -726,9 +735,6 @@ const AddProduct = () => {
             </table>
           </div>
 
-          {/* Pagination Controls for Desktop */}
-          {/* <PaginationControls /> */}
-
           {/* Mobile Card View */}
           <div className="lg:hidden space-y-4">
             {Array.isArray(products) && products.length > 0 ? (
@@ -789,7 +795,7 @@ const AddProduct = () => {
             )}
           </div>
 
-          {/* Pagination Controls for Mobile */}
+          {/* Pagination Controls */}
           <PaginationControls />
         </>
       )}
@@ -850,8 +856,6 @@ const AddProduct = () => {
                   <p className="text-red-500 text-xs mt-1">{validationErrors.price}</p>
                 )}
               </div>
-
-              
               
               <div>
                 {renderFieldLabel('comparePrice', 'Compare Price', true)}
@@ -860,10 +864,12 @@ const AddProduct = () => {
                 placeholder="Compare Price  "
                 value={formData.comparePrice}
                 onChange={(e) => handleInputChange('comparePrice', e.target.value)}
-                className="w-full px-3 lg:h-[50px]  py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+                className={`w-full px-3 lg:h-[50px]  py-2 sm:py-3 bg-black/30 text-[#FFD770] border rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base ${
+                  validationErrors.comparePrice ? 'border-red-500' : 'border-[#FFD770]/40'
+                }`}
               />
-                {validationErrors.comaprePrice && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.comaprePrice}</p>
+                {validationErrors.comparePrice && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.comparePrice}</p>
                 )}
               </div>
 
@@ -874,14 +880,14 @@ const AddProduct = () => {
                 placeholder="Cost Per Item "
                 value={formData.costPerItem}
                 onChange={(e) => handleInputChange('costPerItem', e.target.value)}
-                className="w-full px-3 lg:h-[50px]  py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+                className={`w-full px-3 lg:h-[50px]  py-2 sm:py-3 bg-black/30 text-[#FFD770] border rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base ${
+                  validationErrors.costPerItem ? 'border-red-500' : 'border-[#FFD770]/40'
+                }`}
               />
                 {validationErrors.costPerItem && (
                   <p className="text-red-500 text-xs mt-1">{validationErrors.costPerItem}</p>
                 )}
               </div>
-              
-              
 
               {/* Stock - Required */}
               <div>
@@ -1025,30 +1031,6 @@ const AddProduct = () => {
                   Selected: {formData.roomType.length > 0 ? formData.roomType.join(', ') : 'None'}
                 </div>
               </div>
-
-              {/* Style Selection 
-              <div className="lg:col-span-3">
-                <label className="block font-semibold mb-2 text-[#FFD770] text-sm sm:text-base">Style</label>
-                <div className="flex flex-wrap gap-2">
-                  {styleOptions.map((style) => (
-                    <button
-                      key={style}
-                      type="button"
-                      onClick={() => handleArrayChange('style', style)}
-                      className={`px-2 sm:px-3 py-1 rounded border text-xs sm:text-sm transition ${
-                        formData.style.includes(style)
-                          ? 'bg-[#FFD770] text-black border-[#FFD770]'
-                          : 'bg-black/30 text-[#FFD770] border-[#FFD770]/40 hover:border-[#FFD770]/80'
-                      }`}
-                    >
-                      {style}
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-2 text-xs sm:text-sm text-[#FFD770]/80">
-                  Selected: {formData.style.length > 0 ? formData.style.join(', ') : 'None'}
-                </div>
-              </div> */}
 
               {/* Material Selection */}
               <div className="lg:col-span-3">
@@ -1212,7 +1194,47 @@ const AddProduct = () => {
               </div>
             </div>
 
-            {/* Shipping Information */}
+            {/* MOVED: Additional Information Section - NOW ABOVE SHIPPING */}
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Additional Information</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  placeholder="Country of Origin"
+                  value={formData.countryOfOrigin}
+                  onChange={(e) => handleInputChange('countryOfOrigin', e.target.value)}
+                  className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Special handling for freeShipping checkbox */}
+              <label className="flex items-center gap-2 mt-8">
+                <input
+                  type="checkbox"
+                  checked={formData.freeShipping}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    setFormData({ 
+                      ...formData, 
+                      freeShipping: isChecked,
+                      flatShippingRate: isChecked ? "" : formData.flatShippingRate // Clear rate if free shipping
+                    });
+                    // Clear validation error when enabling free shipping
+                    if (isChecked && validationErrors.flatShippingRate) {
+                      setValidationErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors.flatShippingRate;
+                        return newErrors;
+                      });
+                    }
+                  }}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm sm:text-base">Free Shipping</span>
+              </label>
+
+            {/* Shipping Information - NOW BELOW ADDITIONAL INFORMATION */}
             <div className="mt-6">
               <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Shipping & Delivery</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1232,13 +1254,25 @@ const AddProduct = () => {
                   className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
                 />
                 
-                <input
-                  type="number"
-                  placeholder="Flat Shipping Rate"
-                  value={formData.flatShippingRate}
-                  onChange={(e) => handleInputChange('flatShippingRate', e.target.value)}
-                  className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
-                />
+                {/* CONDITIONAL: Flat Shipping Rate - Only show if NOT free shipping */}
+                {!formData.freeShipping && (
+                  <div>
+                    {renderFieldLabel('flatShippingRate', 'Flat Shipping Rate', true)}
+                    <input
+                      type="number"
+                      placeholder="Flat Shipping Rate"
+                      value={formData.flatShippingRate}
+                      onChange={(e) => handleInputChange('flatShippingRate', e.target.value)}
+                      className={`w-full px-3 py-2 bg-black/30 text-[#FFD770] border rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm ${
+                        validationErrors.flatShippingRate ? 'border-red-500' : 'border-[#FFD770]/40'
+                      }`}
+                      required
+                    />
+                    {validationErrors.flatShippingRate && (
+                      <p className="text-red-500 text-xs mt-1">{validationErrors.flatShippingRate}</p>
+                    )}
+                  </div>
+                )}
                 
                 <input
                   type="text"
@@ -1271,20 +1305,6 @@ const AddProduct = () => {
               </div>
             </div>
 
-            {/* Additional Information */}
-            <div className="mt-6">
-              <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Additional Information</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Country of Origin"
-                  value={formData.countryOfOrigin}
-                  onChange={(e) => handleInputChange('countryOfOrigin', e.target.value)}
-                  className="w-full px-3 py-2 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none text-sm"
-                />
-              </div>
-            </div>
-
             {/* Boolean Flags */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-6">
               {[
@@ -1292,7 +1312,6 @@ const AddProduct = () => {
                 { key: "ecoFriendly", label: "Eco Friendly" },
                 { key: "sustainableMaterials", label: "Sustainable Materials" },
                 { key: "handcrafted", label: "Handcrafted" },
-                { key: "freeShipping", label: "Free Shipping" },
                 { key: "isFeatured", label: "Featured" },
                 { key: "isNewArrival", label: "New Arrival" },
                 { key: "isBestSeller", label: "Best Seller" }
@@ -1309,6 +1328,8 @@ const AddProduct = () => {
                   <span className="text-sm sm:text-base">{label}</span>
                 </label>
               ))}
+              
+              
               
               {/* Special handling for isOnSale checkbox */}
               <label className="flex items-center gap-2">
