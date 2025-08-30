@@ -76,10 +76,7 @@ const FeaturedProduct = () => {
           FEATURED
         </div>
 
-        {/* Heart icon */}
-        <div className="absolute top-4 right-4 z-10 bg-black/50 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-yellow-500/20 cursor-pointer">
-          <Heart className="w-4 h-4 text-yellow-400 hover:fill-yellow-400 transition-colors" />
-        </div>
+        
 
         {/* Product image */}
         <div className="relative h-64 overflow-hidden">

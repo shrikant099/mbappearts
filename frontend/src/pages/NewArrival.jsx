@@ -92,10 +92,6 @@ const NewArrival = () => {
           {daysAgo}d ago
         </div>
 
-        {/* Heart icon */}
-        <div className="absolute top-16 right-4 z-10 bg-black/50 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-yellow-500/20 cursor-pointer transform hover:scale-110">
-          <Heart className="w-4 h-4 text-yellow-400 hover:fill-yellow-400 transition-colors" />
-        </div>
 
         {/* Product image with overlay effects */}
         <div className="relative h-72 overflow-hidden">
@@ -230,7 +226,7 @@ const NewArrival = () => {
             </h1>
             
             <p className="text-gray-300 text-xl md:text-2xl max-w-3xl mx-auto mb-12 leading-relaxed font-light">
-              Be the first to experience the latest innovations and trending products that just hit our shelves
+              Be the first to experience the latest innovations and trending furnitures that just hit our shelves
             </p>
 
             <div className="flex justify-center mb-8">
@@ -288,7 +284,7 @@ const NewArrival = () => {
           <div className="bg-gradient-to-r from-gray-900 via-black to-gray-900 rounded-3xl p-12 border border-yellow-500/20">
             <h3 className="text-3xl font-bold text-yellow-400 mb-4">Don't Miss Out!</h3>
             <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-              New products arrive weekly. Be the first to get your hands on the latest trends.
+              New furnitures arrive weekly. Be the first to get your hands on the latest trends.
             </p>
             <button onClick={()=>navigate('/products')} className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 cursor-pointer hover:to-yellow-500 text-black px-16 py-5 rounded-full font-bold text-xl transition-all duration-300 hover:shadow-2xl hover:shadow-yellow-500/40 hover:scale-105 transform">
               View All New Arrivals

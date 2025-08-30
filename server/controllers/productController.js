@@ -31,7 +31,7 @@ const buildFilters = (query) => {
   
   // Material filter
   if (query.material) {
-    filters.material = { $in: query.material.split(',') };
+    filters.material = { $in: query.material };
   }
   
   // Color filter

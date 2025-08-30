@@ -187,8 +187,8 @@ const Home = () => {
   const features = useMemo(() => [
     {
       icon: Package,
-      title: "Free Delivery",
-      description: "Get your furniture delivered at no extra charge across India.",
+      title: "Minimum Delivery Charges",
+      description: "Get your furniture delivered at the minimum extra charges across India.",
     },
     {
       icon: Recycle,

@@ -108,10 +108,7 @@ const OnSale = () => {
           </div>
         )}
 
-        {/* Heart icon */}
-        <div className="absolute top-32 right-4 z-20 bg-black/50 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-500/20 cursor-pointer transform hover:scale-110">
-          <Heart className="w-4 h-4 text-red-400 hover:fill-red-400 transition-colors" />
-        </div>
+        
 
         {/* Product image with fire overlay */}
         <div className="relative h-72 overflow-hidden">

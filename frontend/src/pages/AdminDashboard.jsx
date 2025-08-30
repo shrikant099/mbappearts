@@ -4,7 +4,7 @@ import {
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, RadialBarChart, RadialBar
 } from 'recharts';
 import { 
-  Users, ShoppingBag, Package, TrendingUp, DollarSign, Eye, Star,
+  Users, ShoppingBag, Package, TrendingUp, IndianRupee, Eye, Star,
   Calendar, Filter, Download, RefreshCw, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { endpoints, orderEndpoints, reviewEndpoints } from '../services/api';
@@ -419,9 +419,9 @@ const AdminDashboard = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          <StatCard title="Total Users" value={stats.totalUsers} icon={Users} />
+          <StatCard title="Total Users" value={stats.totalUsers -1} icon={Users} />
           <StatCard title="Total Orders" value={stats.totalOrders} icon={ShoppingBag} />
-          <StatCard title="Total Revenue" value={`₹${stats.totalRevenue?.toLocaleString() || 0}`} icon={DollarSign} />
+          <StatCard title="Total Revenue" value={`₹${stats.totalRevenue?.toLocaleString() || 0}`} icon={IndianRupee} />
           <StatCard title="Products" value={stats.totalProducts} icon={Package} />
         </div>
 
@@ -574,12 +574,7 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between mb-4 sm:mb-6">
             <h3 className="text-lg sm:text-xl font-semibold text-white">Top Products</h3>
             <div className="flex space-x-2">
-              <button className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
-                <Filter className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
-              </button>
-              <button className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
-                <Download className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
-              </button>
+              
             </div>
           </div>
           
@@ -638,12 +633,7 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between mb-4 sm:mb-6">
             <h3 className="text-lg sm:text-xl font-semibold text-white">Recent Orders</h3>
             <div className="flex space-x-2">
-              <button className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
-                <Filter className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
-              </button>
-              <button className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
-                <Download className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
-              </button>
+          
             </div>
           </div>
           
@@ -718,7 +708,7 @@ const AdminDashboard = () => {
               <div className="min-w-0">
                 <h4 className="text-base sm:text-lg font-semibold text-white">Manage Users</h4>
                 <p className="text-gray-400 text-xs sm:text-sm">View and manage user accounts</p>
-                <p className="text-yellow-400 text-xs mt-1">{stats.totalUsers} users registered</p>
+                <p className="text-yellow-400 text-xs mt-1">{stats.totalUsers -1} users registered</p>
               </div>
             </div>
             <button onClick={()=> navigate('/admindashboard/viewusers')} className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-medium py-2 rounded-lg transition-colors text-sm sm:text-base">
@@ -781,7 +771,7 @@ const AdminDashboard = () => {
             </div>
             <h3 className="text-gray-400 text-xs sm:text-sm font-medium mb-2">Active Users</h3>
             <p className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
-              {Math.round(stats.totalUsers )}
+              {Math.round(stats.totalUsers -1)}
             </p>
           </div>
 
