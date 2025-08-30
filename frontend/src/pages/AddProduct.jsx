@@ -29,8 +29,9 @@ const AddProduct = () => {
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Search/filter state
-  const [searchTerm, setSearchTerm] = useState("");
+  // UPDATED: Search state management
+  const [searchInput, setSearchInput] = useState(""); // Input field value
+  const [searchTerm, setSearchTerm] = useState(""); // Actual search term used for API
   const [statusFilter, setStatusFilter] = useState("");
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -179,6 +180,19 @@ const AddProduct = () => {
     }
   };
 
+  // ADDED: Handle search button click
+  const handleSearchClick = () => {
+    setSearchTerm(searchInput.trim());
+    setCurrentPage(1); // Reset to first page on search
+  };
+
+  // ADDED: Handle Enter key press in search input
+  const handleSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearchClick();
+    }
+  };
+
   // Available options for furniture
   const roomTypeOptions = [
     'Living Room', 'Bedroom', 'Dining Room', 'Kitchen', 'Bathroom', 'Office', 'Outdoor', 'Entryway', 'Kids Room', 'Other'
@@ -235,7 +249,7 @@ const AddProduct = () => {
     }
   };
 
-  // Fetch products with server-side pagination
+  // UPDATED: Fetch products with search term from state
   const fetchProducts = async (page = 1, limit = productsPerPage) => {
     try {
       dispatch(setLoading(true));
@@ -312,7 +326,7 @@ const AddProduct = () => {
     fetchBrands();
   }, []);
 
-  // Fetch products when page, search, or status changes
+  // UPDATED: Fetch products when page, searchTerm, or status changes
   useEffect(() => {
     fetchProducts(currentPage, productsPerPage);
     // eslint-disable-next-line
@@ -645,17 +659,24 @@ const AddProduct = () => {
         </button>
       </div>
 
+      {/* UPDATED: Search Bar with Button */}
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
-        <input
-          type="text"
-          placeholder="Search by name"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1); // Reset to first page on search
-          }}
-          className="w-full sm:w-[350px] p-3 border rounded text-sm"
-        />
+        <div className="flex w-full sm:w-[350px]">
+          <input
+            type="text"
+            placeholder="Search by name"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyPress={handleSearchKeyPress}
+            className="flex-1 p-3 border rounded-l text-sm focus:outline-none focus:ring-2 focus:ring-[#FFD770] focus:border-transparent"
+          />
+          <button
+            onClick={handleSearchClick}
+            className="bg-[#FFD770] text-black px-4 py-3 rounded-r hover:brightness-110 transition border border-l-0 border-[#FFD770] font-medium"
+          >
+            Search
+          </button>
+        </div>
         <select
           value={statusFilter}
           onChange={e => {
@@ -1194,7 +1215,7 @@ const AddProduct = () => {
               </div>
             </div>
 
-            {/* MOVED: Additional Information Section - NOW ABOVE SHIPPING */}
+            {/* Additional Information Section - ABOVE SHIPPING */}
             <div className="mt-6">
               <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Additional Information</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1208,33 +1229,32 @@ const AddProduct = () => {
               </div>
             </div>
 
-            {/* Special handling for freeShipping checkbox */}
-              <label className="flex items-center gap-2 mt-8">
-                <input
-                  type="checkbox"
-                  checked={formData.freeShipping}
-                  onChange={(e) => {
-                    const isChecked = e.target.checked;
-                    setFormData({ 
-                      ...formData, 
-                      freeShipping: isChecked,
-                      flatShippingRate: isChecked ? "" : formData.flatShippingRate // Clear rate if free shipping
+            {/* Free Shipping Checkbox */}
+            <label className="flex items-center gap-2 mt-8">
+              <input
+                type="checkbox"
+                checked={formData.freeShipping}
+                onChange={(e) => {
+                  const isChecked = e.target.checked;
+                  setFormData({ 
+                    ...formData, 
+                    freeShipping: isChecked,
+                    flatShippingRate: isChecked ? "" : formData.flatShippingRate
+                  });
+                  if (isChecked && validationErrors.flatShippingRate) {
+                    setValidationErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.flatShippingRate;
+                      return newErrors;
                     });
-                    // Clear validation error when enabling free shipping
-                    if (isChecked && validationErrors.flatShippingRate) {
-                      setValidationErrors(prev => {
-                        const newErrors = { ...prev };
-                        delete newErrors.flatShippingRate;
-                        return newErrors;
-                      });
-                    }
-                  }}
-                  className="w-4 h-4"
-                />
-                <span className="text-sm sm:text-base">Free Shipping</span>
-              </label>
+                  }
+                }}
+                className="w-4 h-4"
+              />
+              <span className="text-sm sm:text-base">Free Shipping</span>
+            </label>
 
-            {/* Shipping Information - NOW BELOW ADDITIONAL INFORMATION */}
+            {/* Shipping Information - BELOW ADDITIONAL INFORMATION */}
             <div className="mt-6">
               <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Shipping & Delivery</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1328,8 +1348,6 @@ const AddProduct = () => {
                   <span className="text-sm sm:text-base">{label}</span>
                 </label>
               ))}
-              
-              
               
               {/* Special handling for isOnSale checkbox */}
               <label className="flex items-center gap-2">

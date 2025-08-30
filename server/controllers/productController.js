@@ -169,16 +169,36 @@ export const getAllProducts = async (req, res) => {
       sort = { createdAt: -1 }; // Default sort by newest
     }
     
-    // Build filters
-    const filters = buildFilters(req.query);
+    console.log('Query parameters:', req.query);
+
+    // Build filters (excluding search from buildFilters to avoid conflicts)
+    const queryWithoutSearch = { ...req.query };
+    delete queryWithoutSearch.search;
+    const filters = buildFilters(queryWithoutSearch);
     
     // Add status filter if provided
     if (req.query.status) {
       filters.status = req.query.status;
     }
     
+    // Add search functionality - search only in product name
+    if (req.query.search) {
+      const searchTerm = req.query.search.trim();
+      console.log('Search term:', searchTerm);
+      
+      if (searchTerm) {
+        // Search only in the name field with partial matching
+        filters.name = { $regex: searchTerm, $options: 'i' };
+        
+        console.log('Final filters:', JSON.stringify(filters, null, 2));
+      }
+    }
+    
+    console.log('Executing query with filters:', JSON.stringify(filters, null, 2));
+    
     // Get total count for pagination
     const total = await Product.countDocuments(filters);
+    console.log('Total products found:', total);
     
     // Get products with filters, pagination, and sorting
     const products = await Product.find(filters)
@@ -190,6 +210,8 @@ export const getAllProducts = async (req, res) => {
       .limit(limit)
       .lean();
     
+    console.log('Products returned:', products.length);
+    
     res.json({
       success: true,
       total,
@@ -199,14 +221,13 @@ export const getAllProducts = async (req, res) => {
       products
     });
   } catch (error) {
-    console.log(error)
+    console.log('Error:', error);
     res.status(500).json({ 
       success: false, 
       message: error.message 
     });
   }
 };
-
 // Get single furniture product by ID or slug
 export const getProductById = async (req, res) => {
   try {
