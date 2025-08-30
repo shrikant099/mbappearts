@@ -17,6 +17,7 @@ import logo from "../../assets/images/LOGO.jpg"
 import { FaSquareInstagram } from "react-icons/fa6";
 import { useDispatch } from 'react-redux';
 import { clearFilters, updateFilter } from '../../slices/filterSlice';
+import { setSearchData } from '../../slices/searchSlice'; // Add this import
 import { useNavigate } from 'react-router-dom';
 
 export default function Footer() {
@@ -74,7 +75,6 @@ export default function Footer() {
 
   const companyLinks = [
     { name: 'About Us', href: '/about' },
-    
   ];
 
   const helpLinks = [
@@ -83,64 +83,95 @@ export default function Footer() {
     { name: 'Care Guide', href: '/care-guide' }
   ];
 
+  // UPDATED: Category links with the same pattern as Navbar
   const categoryLinks = [
     { 
       name: 'Living Room', 
       onClick: () => {
+        // Clear all filters first
         dispatch(clearFilters());
+        dispatch(setSearchData(''));
+        
+        // Apply the room type filter
         dispatch(updateFilter({
           type: "roomType",
           value: "Living Room",
           checked: true
         }));
+        
+        // Navigate to products
         navigate('/products');
       }
     },
     { 
       name: 'Bedroom',
       onClick: () => {
+        // Clear all filters first
         dispatch(clearFilters());
+        dispatch(setSearchData(''));
+        
+        // Apply the room type filter
         dispatch(updateFilter({
           type: "roomType",
           value: "Bedroom",
           checked: true
         }));
+        
+        // Navigate to products
         navigate('/products');
       }
     },
     { 
       name: 'Dining Room',
       onClick: () => {
+        // Clear all filters first
         dispatch(clearFilters());
+        dispatch(setSearchData(''));
+        
+        // Apply the room type filter
         dispatch(updateFilter({
           type: "roomType",
           value: "Dining Room",
           checked: true
         }));
+        
+        // Navigate to products
         navigate('/products');
       }
     },
     { 
       name: 'Office Furniture',
       onClick: () => {
+        // Clear all filters first
         dispatch(clearFilters());
+        dispatch(setSearchData(''));
+        
+        // Apply the room type filter for Office
         dispatch(updateFilter({
           type: "roomType",
           value: "Office",
           checked: true
         }));
+        
+        // Navigate to products
         navigate('/products');
       }
     },
     { 
       name: 'Storage Solutions',
       onClick: () => {
+        // Clear all filters first
         dispatch(clearFilters());
+        dispatch(setSearchData(''));
+        
+        // Apply material filter for Wood (as storage solutions)
         dispatch(updateFilter({
           type: "material",
           value: "Wood",
           checked: true
         }));
+        
+        // Navigate to products
         navigate('/products');
       }
     }
@@ -233,7 +264,7 @@ export default function Footer() {
                 </nav>
               </div>
 
-              {/* Furniture Categories */}
+              {/* Furniture Categories - UPDATED */}
               <div className="space-y-6">
                 <h3 className="font-bold text-2xl text-[#FFD700] relative group flex items-center gap-2">
                   <FaCouch className="text-lg" />
@@ -331,14 +362,14 @@ export default function Footer() {
                 <div className="relative group overflow-hidden rounded-2xl border-2 border-[#FFD700]/30 shadow-2xl">
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
                   <iframe
-  src="https://www.google.com/maps?q=Ground+Floor,+Plot+No+75,+Post+Udsar+Lodera+Teh+Sardarshahar,+Vikash+Nagar+Village+Bholusar,+Bholoosar,+Churu+District,+Rajasthan+331403&output=embed"
-  style={{ border: 0 }}
-  allowFullScreen=""
-  loading="lazy"
-  referrerPolicy="no-referrer-when-downgrade"
-  className="w-full h-64 transition-all duration-500 rounded-2xl shadow-xl"
-  title="Mbappe Arts Location"
-/>
+                    src="https://www.google.com/maps?q=Ground+Floor,+Plot+No+75,+Post+Udsar+Lodera+Teh+Sardarshahar,+Vikash+Nagar+Village+Bholusar,+Bholoosar,+Churu+District,+Rajasthan+331403&output=embed"
+                    style={{ border: 0 }}
+                    allowFullScreen=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    className="w-full h-64 transition-all duration-500 rounded-2xl shadow-xl"
+                    title="Mbappe Arts Location"
+                  />
                   <div className="absolute bottom-4 left-4 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300">
                     <div className="bg-black/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-[#FFD700]/30">
                       <p className="text-[#FFD700] text-sm font-semibold">🏠 Visit Our Showroom</p>
@@ -371,8 +402,6 @@ export default function Footer() {
                 <div className="text-center text-gray-300">
                   <p>&copy; 2025 Mbappe Arts. All rights reserved.</p>
                 </div>
-                
-               
               </div>
             </div>
           </div>

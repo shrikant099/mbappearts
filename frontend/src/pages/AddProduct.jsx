@@ -22,6 +22,11 @@ const AddProduct = () => {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [brands, setBrands] = useState([]);
+  
+  // ADDED: Low stock state
+  const [showLowStock, setShowLowStock] = useState(false);
+  const [lowStockProducts, setLowStockProducts] = useState([]);
+  const [lowStockStats, setLowStockStats] = useState(null);
 
   // Server-side pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,6 +107,41 @@ const AddProduct = () => {
   const [videoFile, setVideoFile] = useState(null);
   const [dimensionDiagramFile, setDimensionDiagramFile] = useState(null);
 
+  // ADDED: Fetch low stock products function
+  const fetchLowStockProducts = async () => {
+    try {
+      dispatch(setLoading(true));
+      const res = await apiConnector("GET", productEndpoints.getLowStockProducts, null, {
+        Authorization: `Bearer ${token}`
+      });
+
+      console.log("Low stock products response:", res);
+
+      if (res.data.success) {
+        setLowStockProducts(res.data.products);
+        setLowStockStats(res.data.stats);
+        setShowLowStock(true);
+        setProducts([]); // Clear regular products when showing low stock
+        toast.success(`Found ${res.data.products.length} low stock products`);
+      } else {
+        throw new Error(res.data.message || "Failed to fetch low stock products");
+      }
+    } catch (error) {
+      console.error("Error fetching low stock products:", error);
+      toast.error("Unable to fetch low stock products");
+      setLowStockProducts([]);
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  // ADDED: Switch back to regular products view
+  const showRegularProducts = () => {
+    setShowLowStock(false);
+    setLowStockProducts([]);
+    fetchProducts(1, productsPerPage);
+  };
+
   // Define required fields with conditional logic
   const getRequiredFields = () => {
     const baseRequiredFields = {
@@ -166,9 +206,31 @@ const AddProduct = () => {
     return Object.keys(errors).length === 0;
   };
 
-  // Clear validation errors when field is updated
+  // FIXED: Clear validation errors when field is updated with proper numeric handling
   const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+    const numericFields = ["price", "comparePrice", "costPerItem", "stock", "lowStockThreshold", 
+                          "length", "width", "height", "weight", "assemblyTime", "weightCapacity", 
+                          "shippingWeight", "flatShippingRate"];
+
+    // For numeric fields, ensure we keep the value as string until submission
+    if (numericFields.includes(field)) {
+      // For price fields that can have decimals
+      if (field === "price" || field === "comparePrice" || field === "costPerItem" || 
+          field === "flatShippingRate" || field === "shippingWeight") {
+        // Allow decimal numbers for price/money fields
+        if (/^\d*\.?\d*$/.test(value) || value === "") {
+          setFormData({ ...formData, [field]: value });
+        }
+      } else {
+        // For stock and other integer fields, only allow whole numbers
+        if (/^\d*$/.test(value) || value === "") {
+          setFormData({ ...formData, [field]: value });
+        }
+      }
+    } else {
+      // Non-numeric fields
+      setFormData({ ...formData, [field]: value });
+    }
     
     // Clear validation error for this field
     if (validationErrors[field]) {
@@ -328,9 +390,10 @@ const AddProduct = () => {
 
   // UPDATED: Fetch products when page, searchTerm, or status changes
   useEffect(() => {
-    fetchProducts(currentPage, productsPerPage);
-    // eslint-disable-next-line
-  }, [currentPage, productsPerPage, searchTerm, statusFilter]);
+    if (!showLowStock) {
+      fetchProducts(currentPage, productsPerPage);
+    }
+  }, [currentPage, productsPerPage, searchTerm, statusFilter, showLowStock]);
 
   const handleSingleImageChange = (e, index) => {
     const file = e.target.files[0];
@@ -367,7 +430,13 @@ const AddProduct = () => {
       });
       if (res.data.success) {
         toast.success("Product deleted successfully!");
-        fetchProducts(currentPage, productsPerPage); // Refetch current page
+        
+        // Refresh the appropriate product list
+        if (showLowStock) {
+          fetchLowStockProducts();
+        } else {
+          fetchProducts(currentPage, productsPerPage);
+        }
       } else {
         toast.error("Deletion failed");
       }
@@ -432,6 +501,7 @@ const AddProduct = () => {
     return date.toISOString().split('T')[0];
   };
 
+  // FIXED: Updated handleSubmit with proper numeric conversion
   const handleSubmit = async (edit = false) => {
     // Validate form before submission
     if (!validateForm()) {
@@ -447,11 +517,22 @@ const AddProduct = () => {
                            "length", "width", "height", "weight", "assemblyTime", "weightCapacity", 
                            "shippingWeight", "flatShippingRate"];
 
+      // Add console log to debug values before sending
+      console.log("Form data before submission:", formData);
+
       Object.entries(formData).forEach(([key, value]) => {
         if (numericFields.includes(key)) {
-          if (value !== "") {
+          if (value !== "" && value !== null && value !== undefined) {
+            // Convert to number and validate
             const numVal = Number(value);
-            if (isNaN(numVal)) throw new Error(`Invalid ${key} value`);
+            if (isNaN(numVal)) {
+              throw new Error(`Invalid ${key} value: ${value}`);
+            }
+            
+            // Log the exact value being sent
+            console.log(`Sending ${key}:`, numVal, typeof numVal);
+            
+            // Append the exact numeric value
             payload.append(key, numVal);
           }
         } else if (Array.isArray(value)) {
@@ -504,18 +585,30 @@ const AddProduct = () => {
       const endpoint = edit ? `${updateProduct}${editId}` : createProduct;
       const method = edit ? "PUT" : "POST";
 
+      // Log the payload being sent (for debugging)
+      console.log("Payload entries:");
+      for (let [key, value] of payload.entries()) {
+        console.log(key, value);
+      }
+
       const response = await apiConnector(method, endpoint, payload, {
         "Content-Type": "multipart/form-data",
         Authorization : `Bearer ${token}`
       });
 
-      console.log("response for submit is ", response);
+      console.log("Backend response:", response);
 
       toast.success(edit ? "Product updated!" : "Product created!");
       setShowAddModal(false);
       setShowEditModal(false);
       resetForm();
-      fetchProducts(currentPage, productsPerPage); // Refetch current page
+      
+      // Refresh the appropriate product list
+      if (showLowStock) {
+        fetchLowStockProducts();
+      } else {
+        fetchProducts(currentPage, productsPerPage);
+      }
     } catch (err) {
       console.log(err);
       toast.error(err.message || "Operation failed!");
@@ -644,57 +737,98 @@ const AddProduct = () => {
     </label>
   );
 
+  // Get display products based on current view
+  const displayProducts = showLowStock ? lowStockProducts : products;
+  const displayTotal = showLowStock ? lowStockProducts.length : totalProducts;
+
   return (
     <div className="w-[100vw] lg:w-[calc(100vw-256px)] p-3 sm:p-6 text-black overflow-y-auto min-h-[100vh]">
+      {/* UPDATED: Header with Low Stock Products button */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-        <h2 className="text-xl sm:text-2xl font-semibold">Manage Products</h2>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowAddModal(true);
-          }}
-          className="bg-[#FFD770] text-black px-4 py-2 rounded shadow-lg hover:brightness-110 transition w-full sm:w-auto text-center"
-        >
-          + Add Product
-        </button>
-      </div>
-
-      {/* UPDATED: Search Bar with Button */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
-        <div className="flex w-full sm:w-[350px]">
-          <input
-            type="text"
-            placeholder="Search by name"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyPress={handleSearchKeyPress}
-            className="flex-1 p-3 border rounded-l text-sm focus:outline-none focus:ring-2 focus:ring-[#FFD770] focus:border-transparent"
-          />
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl sm:text-2xl font-semibold">
+            {showLowStock ? "Low Stock Products" : "Manage Products"}
+          </h2>
+          
+          {/* ADDED: Low Stock Stats */}
+          {showLowStock && lowStockStats && (
+            <div className="text-sm bg-red-100 text-red-800 px-3 py-1 rounded-full">
+              Critical: {lowStockStats.criticalProducts} | Urgent: {lowStockStats.urgentProducts}
+            </div>
+          )}
+        </div>
+        
+        <div className="flex gap-2 w-full sm:w-auto">
+          {/* ADDED: Low Stock Products Button */}
+          {!showLowStock && (
+            <button
+              onClick={fetchLowStockProducts}
+              className="bg-red-600 text-white px-4 py-2 rounded shadow-lg hover:bg-red-700 transition flex-1 sm:flex-none text-center"
+            >
+              🚨 Low Stock Products
+            </button>
+          )}
+          
+          {/* ADDED: Back to All Products Button */}
+          {showLowStock && (
+            <button
+              onClick={showRegularProducts}
+              className="bg-blue-600 text-white px-4 py-2 rounded shadow-lg hover:bg-blue-700 transition flex-1 sm:flex-none text-center"
+            >
+              ← Back to All Products
+            </button>
+          )}
+          
           <button
-            onClick={handleSearchClick}
-            className="bg-[#FFD770] text-black px-4 py-3 rounded-r hover:brightness-110 transition border border-l-0 border-[#FFD770] font-medium"
+            onClick={() => {
+              resetForm();
+              setShowAddModal(true);
+            }}
+            className="bg-[#FFD770] text-black px-4 py-2 rounded shadow-lg hover:brightness-110 transition flex-1 sm:w-auto text-center"
           >
-            Search
+            + Add Product
           </button>
         </div>
-        <select
-          value={statusFilter}
-          onChange={e => {
-            setStatusFilter(e.target.value);
-            setCurrentPage(1); // Reset to first page on filter
-          }}
-          className="p-3 border rounded text-sm"
-        >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
       </div>
+
+      {/* UPDATED: Search Bar with Button - Hide when showing low stock */}
+      {!showLowStock && (
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          <div className="flex w-full sm:w-[350px]">
+            <input
+              type="text"
+              placeholder="Search by name"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyPress={handleSearchKeyPress}
+              className="flex-1 p-3 border rounded-l text-sm focus:outline-none focus:ring-2 focus:ring-[#FFD770] focus:border-transparent"
+            />
+            <button
+              onClick={handleSearchClick}
+              className="bg-[#FFD770] text-black px-4 py-3 rounded-r hover:brightness-110 transition border border-l-0 border-[#FFD770] font-medium"
+            >
+              Search
+            </button>
+          </div>
+          <select
+            value={statusFilter}
+            onChange={e => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1); // Reset to first page on filter
+            }}
+            className="p-3 border rounded text-sm"
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      )}
 
       {/* Product Count Info */}
       <div className="text-right text-xs text-gray-600 mb-4">
-        Showing {products.length} of {totalProducts} products 
-        {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
+        Showing {displayProducts.length} of {displayTotal} products 
+        {!showLowStock && totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
       </div>
 
       {loading ? (
@@ -706,12 +840,13 @@ const AddProduct = () => {
           {/* Desktop Table View */}
           <div className="hidden lg:block overflow-x-auto shadow-lg rounded-lg">
             <table className="min-w-[700px] w-full bg-white rounded">
-              <thead className="bg-[#FFD770]">
+              <thead className={showLowStock ? "bg-red-600 text-white" : "bg-[#FFD770]"}>
                 <tr>
                   <th className="px-4 py-2 text-left">Sr. No.</th>
                   <th className="px-4 py-2 text-left">Name</th>
                   <th className="px-4 py-2 text-left">Price</th>
                   <th className="px-4 py-2 text-left">Stock</th>
+                  {showLowStock && <th className="px-4 py-2 text-left">Threshold</th>}
                   <th className="px-4 py-2 text-left">Category</th>
                   <th className="px-4 py-2 text-left">Brand</th>
                   <th className="px-4 py-2 text-left">Status</th>
@@ -719,13 +854,19 @@ const AddProduct = () => {
                 </tr>
               </thead>
               <tbody>
-                {Array.isArray(products) && products.length > 0 ? (
-                  products.map((prod, idx) => (
-                    <tr key={prod._id} className="border-t">
-                      <td className="px-4 py-2">{(currentPage - 1) * productsPerPage + idx + 1}</td>
+                {Array.isArray(displayProducts) && displayProducts.length > 0 ? (
+                  displayProducts.map((prod, idx) => (
+                    <tr key={prod._id} className={`border-t ${showLowStock && prod.stock === 0 ? 'bg-red-50' : ''}`}>
+                      <td className="px-4 py-2">
+                        {showLowStock ? idx + 1 : (currentPage - 1) * productsPerPage + idx + 1}
+                      </td>
                       <td className="px-4 py-2">{prod.name}</td>
                       <td className="px-4 py-2">₹{prod.price}</td>
-                      <td className="px-4 py-2">{prod.stock}</td>
+                      <td className={`px-4 py-2 ${prod.stock === 0 ? 'text-red-600 font-bold' : prod.stock <= 5 ? 'text-orange-600 font-semibold' : ''}`}>
+                        {prod.stock}
+                        {showLowStock && prod.stock === 0 && <span className="ml-1 text-xs">(OUT OF STOCK)</span>}
+                      </td>
+                      {showLowStock && <td className="px-4 py-2">{prod.lowStockThreshold}</td>}
                       <td className="px-4 py-2">{prod.category?.name}</td>
                       <td className="px-4 py-2">{prod.brand?.name}</td>
                       <td className="px-4 py-2 capitalize">{prod.status}</td>
@@ -747,8 +888,8 @@ const AddProduct = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="px-4 py-6 text-center text-gray-500">
-                      No products found
+                    <td colSpan={showLowStock ? "9" : "8"} className="px-4 py-6 text-center text-gray-500">
+                      {showLowStock ? "No low stock products found" : "No products found"}
                     </td>
                   </tr>
                 )}
@@ -758,20 +899,25 @@ const AddProduct = () => {
 
           {/* Mobile Card View */}
           <div className="lg:hidden space-y-4">
-            {Array.isArray(products) && products.length > 0 ? (
-              products.map((prod, idx) => (
-                <div key={prod._id} className="bg-white rounded-lg shadow-lg p-4 border">
+            {Array.isArray(displayProducts) && displayProducts.length > 0 ? (
+              displayProducts.map((prod, idx) => (
+                <div key={prod._id} className={`bg-white rounded-lg shadow-lg p-4 border ${showLowStock && prod.stock === 0 ? 'border-red-200 bg-red-50' : ''}`}>
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                          #{(currentPage - 1) * productsPerPage + idx + 1}
+                          #{showLowStock ? idx + 1 : (currentPage - 1) * productsPerPage + idx + 1}
                         </span>
                         <span className={`text-xs px-2 py-1 rounded capitalize ${
                           prod.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
                           {prod.status}
                         </span>
+                        {showLowStock && prod.stock === 0 && (
+                          <span className="text-xs px-2 py-1 rounded bg-red-600 text-white font-bold">
+                            OUT OF STOCK
+                          </span>
+                        )}
                       </div>
                       <h3 className="font-semibold text-lg text-gray-800 mb-1">{prod.name}</h3>
                       <p className="text-2xl font-bold text-green-600">₹{prod.price}</p>
@@ -781,8 +927,16 @@ const AddProduct = () => {
                   <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
                     <div>
                       <span className="text-gray-500">Stock:</span>
-                      <p className="font-medium">{prod.stock}</p>
+                      <p className={`font-medium ${prod.stock === 0 ? 'text-red-600 font-bold' : prod.stock <= 5 ? 'text-orange-600 font-semibold' : ''}`}>
+                        {prod.stock}
+                      </p>
                     </div>
+                    {showLowStock && (
+                      <div>
+                        <span className="text-gray-500">Threshold:</span>
+                        <p className="font-medium">{prod.lowStockThreshold}</p>
+                      </div>
+                    )}
                     <div>
                       <span className="text-gray-500">Category:</span>
                       <p className="font-medium">{prod.category?.name || "N/A"}</p>
@@ -811,13 +965,15 @@ const AddProduct = () => {
               ))
             ) : (
               <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-                <p className="text-gray-500 text-lg">No products found</p>
+                <p className="text-gray-500 text-lg">
+                  {showLowStock ? "No low stock products found" : "No products found"}
+                </p>
               </div>
             )}
           </div>
 
-          {/* Pagination Controls */}
-          <PaginationControls />
+          {/* Pagination Controls - Only show for regular products */}
+          {!showLowStock && <PaginationControls />}
         </>
       )}
 
@@ -861,11 +1017,12 @@ const AddProduct = () => {
                 className="w-full px-3 lg:h-[50px] lg:mt-8 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
               />
               
-              {/* Price - Required */}
+              {/* Price - Required - FIXED: Use text input with numeric validation */}
               <div>
                 {renderFieldLabel('price', 'Price', true)}
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   placeholder="Price"
                   value={formData.price}
                   onChange={(e) => handleInputChange('price', e.target.value)}
@@ -880,15 +1037,16 @@ const AddProduct = () => {
               
               <div>
                 {renderFieldLabel('comparePrice', 'Compare Price', true)}
-              <input
-                type="number"
-                placeholder="Compare Price  "
-                value={formData.comparePrice}
-                onChange={(e) => handleInputChange('comparePrice', e.target.value)}
-                className={`w-full px-3 lg:h-[50px]  py-2 sm:py-3 bg-black/30 text-[#FFD770] border rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base ${
-                  validationErrors.comparePrice ? 'border-red-500' : 'border-[#FFD770]/40'
-                }`}
-              />
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Compare Price"
+                  value={formData.comparePrice}
+                  onChange={(e) => handleInputChange('comparePrice', e.target.value)}
+                  className={`w-full px-3 lg:h-[50px] py-2 sm:py-3 bg-black/30 text-[#FFD770] border rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base ${
+                    validationErrors.comparePrice ? 'border-red-500' : 'border-[#FFD770]/40'
+                  }`}
+                />
                 {validationErrors.comparePrice && (
                   <p className="text-red-500 text-xs mt-1">{validationErrors.comparePrice}</p>
                 )}
@@ -896,25 +1054,28 @@ const AddProduct = () => {
 
               <div>
                 {renderFieldLabel('costPerItem', 'Cost Per Item', true)}
-              <input
-                type="number"
-                placeholder="Cost Per Item "
-                value={formData.costPerItem}
-                onChange={(e) => handleInputChange('costPerItem', e.target.value)}
-                className={`w-full px-3 lg:h-[50px]  py-2 sm:py-3 bg-black/30 text-[#FFD770] border rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base ${
-                  validationErrors.costPerItem ? 'border-red-500' : 'border-[#FFD770]/40'
-                }`}
-              />
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Cost Per Item"
+                  value={formData.costPerItem}
+                  onChange={(e) => handleInputChange('costPerItem', e.target.value)}
+                  className={`w-full px-3 lg:h-[50px] py-2 sm:py-3 bg-black/30 text-[#FFD770] border rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base ${
+                    validationErrors.costPerItem ? 'border-red-500' : 'border-[#FFD770]/40'
+                  }`}
+                />
                 {validationErrors.costPerItem && (
                   <p className="text-red-500 text-xs mt-1">{validationErrors.costPerItem}</p>
                 )}
               </div>
 
-              {/* Stock - Required */}
+              {/* Stock - Required - FIXED: Use text input with numeric validation */}
               <div>
                 {renderFieldLabel('stock', 'Stock', true)}
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   placeholder="Stock"
                   value={formData.stock}
                   onChange={(e) => handleInputChange('stock', e.target.value)}
@@ -928,7 +1089,9 @@ const AddProduct = () => {
               </div>
               
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Low Stock Threshold"
                 value={formData.lowStockThreshold}
                 onChange={(e) => handleInputChange('lowStockThreshold', e.target.value)}
@@ -984,15 +1147,17 @@ const AddProduct = () => {
               </div>
               
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 placeholder="Length"
                 value={formData.length}
                 onChange={(e) => handleInputChange('length', e.target.value)}
-                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD770]/80 text-sm sm:text-base"
+                className="w-full px-3 py-2 sm:py-3 bg-black/30 text-[#FFD770] border border-[#FFD770]/40 rounded-md placeholder:text-[#FFD770]/60 focus:outline-none focus:border-[#FFD700]/80 text-sm sm:text-base"
               />
               
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 placeholder="Width"
                 value={formData.width}
                 onChange={(e) => handleInputChange('width', e.target.value)}
@@ -1000,7 +1165,8 @@ const AddProduct = () => {
               />
               
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 placeholder="Height"
                 value={formData.height}
                 onChange={(e) => handleInputChange('height', e.target.value)}
@@ -1017,7 +1183,8 @@ const AddProduct = () => {
               </select>
               
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 placeholder="Weight (kg)"
                 value={formData.weight}
                 onChange={(e) => handleInputChange('weight', e.target.value)}
@@ -1120,7 +1287,8 @@ const AddProduct = () => {
 
               {/* Assembly and Capacity */}
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 placeholder="Assembly Time (minutes)"
                 value={formData.assemblyTime}
                 onChange={(e) => handleInputChange('assemblyTime', e.target.value)}
@@ -1128,7 +1296,8 @@ const AddProduct = () => {
               />
 
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 placeholder="Weight Capacity (kg)"
                 value={formData.weightCapacity}
                 onChange={(e) => handleInputChange('weightCapacity', e.target.value)}
@@ -1215,7 +1384,7 @@ const AddProduct = () => {
               </div>
             </div>
 
-            {/* Additional Information Section - ABOVE SHIPPING */}
+            {/* Additional Information Section */}
             <div className="mt-6">
               <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Additional Information</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1254,12 +1423,13 @@ const AddProduct = () => {
               <span className="text-sm sm:text-base">Free Shipping</span>
             </label>
 
-            {/* Shipping Information - BELOW ADDITIONAL INFORMATION */}
+            {/* Shipping Information */}
             <div className="mt-6">
               <h4 className="text-lg font-semibold mb-3 text-[#FFD770]">Shipping & Delivery</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   placeholder="Shipping Weight (kg)"
                   value={formData.shippingWeight}
                   onChange={(e) => handleInputChange('shippingWeight', e.target.value)}
@@ -1279,7 +1449,8 @@ const AddProduct = () => {
                   <div>
                     {renderFieldLabel('flatShippingRate', 'Flat Shipping Rate', true)}
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="Flat Shipping Rate"
                       value={formData.flatShippingRate}
                       onChange={(e) => handleInputChange('flatShippingRate', e.target.value)}

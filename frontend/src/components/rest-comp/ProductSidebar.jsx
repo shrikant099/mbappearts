@@ -372,18 +372,8 @@ const ProductSidebar = () => {
                     </div>
                   </div>
                   
-                  {/* Free Shipping */}
-                  <label className="flex items-center cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={filters.freeShipping || false}
-                      onChange={(e) => handleBooleanFilterChange("freeShipping", e.target.checked)}
-                      className="mr-2 accent-[#FFD700]"
-                    />
-                    <span className="cursor-pointer group-hover:text-yellow-300 transition-colors text-sm">
-                      Free Shipping
-                    </span>
-                  </label>
+                
+                  
                 </div>
               </div>
             </div>

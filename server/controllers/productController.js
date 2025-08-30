@@ -282,6 +282,7 @@ export const getProductById = async (req, res) => {
 // Update an existing furniture product
 export const updateProduct = async (req, res) => {
   try {
+
     // Don't allow updating SKU
     if (req.body.sku) {
       delete req.body.sku;
@@ -796,6 +797,154 @@ export const createBulkProducts = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to create bulk products.",
+    });
+  }
+};
+
+export const getLowStockProducts = async (req, res) => {
+  try {
+
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Sorting (default: most urgent first - lowest stock ratio)
+    let sort = {};
+    if (req.query.sort) {
+      const sortParts = req.query.sort.split(':');
+      sort[sortParts[0]] = sortParts[1] === 'desc' ? -1 : 1;
+    } else {
+      sort = { stock: 1 }; // Default: lowest stock first
+    }
+
+    // Build filters for low stock products
+    const filters = {
+      // Find products where stock is less than lowStockThreshold
+      $expr: { $lt: ["$stock", "$lowStockThreshold"] },
+      status: 'active' // Only active products
+    };
+
+    
+    // Get total count for pagination
+    const total = await Product.countDocuments(filters);
+
+    // Fetch low stock products with aggregation for additional calculations
+    const products = await Product.aggregate([
+      { $match: filters },
+      {
+        $addFields: {
+          // Calculate stock percentage (stock / lowStockThreshold * 100)
+          stockPercentage: {
+            $multiply: [
+              { $divide: ["$stock", "$lowStockThreshold"] },
+              100
+            ]
+          },
+          // Calculate days until out of stock (assuming daily sales based on sold/30)
+          estimatedDaysLeft: {
+            $cond: {
+              if: { $gt: ["$sold", 0] },
+              then: {
+                $divide: [
+                  "$stock",
+                  { $divide: ["$sold", 30] } // Average daily sales
+                ]
+              },
+              else: null
+            }
+          }
+        }
+      },
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'category',
+          foreignField: '_id',
+          as: 'category'
+        }
+      },
+      {
+        $lookup: {
+          from: 'brands',
+          localField: 'brand',
+          foreignField: '_id',
+          as: 'brand'
+        }
+      },
+      {
+        $unwind: {
+          path: '$category',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $unwind: {
+          path: '$brand',
+          preserveNullAndEmptyArrays: true
+        }
+      }
+    ]);
+
+    // Calculate summary statistics
+    const summaryStats = await Product.aggregate([
+      { $match: filters },
+      {
+        $group: {
+          _id: null,
+          totalLowStockProducts: { $sum: 1 },
+          totalLowStockValue: { $sum: { $multiply: ["$stock", "$price"] } },
+          averageStockLevel: { $avg: "$stock" },
+          criticalProducts: {
+            $sum: {
+              $cond: [{ $eq: ["$stock", 0] }, 1, 0]
+            }
+          },
+          urgentProducts: {
+            $sum: {
+              $cond: [
+                { $and: [{ $gt: ["$stock", 0] }, { $lte: ["$stock", 5] }] },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    const stats = summaryStats[0] || {
+      totalLowStockProducts: 0,
+      totalLowStockValue: 0,
+      averageStockLevel: 0,
+      criticalProducts: 0,
+      urgentProducts: 0
+    };
+
+    res.status(200).json({
+      success: true,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      limit,
+      products,
+      stats: {
+        ...stats,
+        totalLowStockValue: Math.round(stats.totalLowStockValue || 0),
+        averageStockLevel: Math.round((stats.averageStockLevel || 0) * 100) / 100
+      },
+      message: products.length > 0 
+        ? `Found ${total} products with low stock` 
+        : 'No low stock products found'
+    });
+  } catch (error) {
+    console.error('Error fetching low stock products:', error);
+    res.status(500).json({
+      success: false,
+      message:  'Failed to fetch low stock products'
     });
   }
 };

@@ -1,6 +1,6 @@
-// const BASE_URL = "http://localhost:4000"
+const BASE_URL = "http://localhost:4000"
 
-const BASE_URL = "https://furniture-backend-2gik.onrender.com"
+// const BASE_URL = "https://furniture-backend-2gik.onrender.com"
 
 // AUTH ENDPOINTS
 export const endpoints = {
@@ -47,6 +47,7 @@ export const productEndpoints = {
   featuredProduct: BASE_URL + "/api/product/featured",
   newArrivals: BASE_URL + "/api/product/new-arrivals",
   onSale : BASE_URL + "/api/product/on-sale",
+  getLowStockProducts : BASE_URL + "/api/product/getLowStockProducts",
 }
 
 //cart endopints

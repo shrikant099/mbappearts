@@ -35,7 +35,7 @@ const CustomerCareGuide = () => {
       icon: CreditCard,
       title: "Secure Payment",
       description: "Choose from multiple payment options",
-      details: "Pay securely using credit/debit cards, UPI, net banking, or EMI options. All transactions are encrypted."
+      details: "Pay securely using credit/debit cards, UPI, net banking. All transactions are encrypted."
     },
     {
       id: 4,
@@ -91,7 +91,7 @@ const CustomerCareGuide = () => {
       items: [
         {
           title: "Payment Methods",
-          content: "We accept all major credit/debit cards, UPI payments, net banking, and cash on delivery (select locations). EMI options available on orders above ₹25,000."
+          content: "We accept all major credit/debit cards, UPI payments, net banking, and cash on delivery."
         },
         {
           title: "Pricing & Discounts",

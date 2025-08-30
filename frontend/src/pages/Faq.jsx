@@ -34,7 +34,7 @@ const FAQ = () => {
       category: "Orders & Shipping",
       icon: Truck,
       question: "Do you offer free delivery?",
-      answer: "Yes! We offer free delivery on all orders across India. Our professional delivery team will handle assembly and placement in your desired room at no extra charge."
+      answer: "Yes! We offer free delivery on special orders across India. Our professional delivery team will handle assembly and placement in your desired room at no extra charge."
     },
     {
       id: 3,
@@ -48,7 +48,7 @@ const FAQ = () => {
       category: "Payment",
       icon: CreditCard,
       question: "What payment methods do you accept?",
-      answer: "We accept all major credit/debit cards, UPI, net banking, EMI options, and cash on delivery (for select locations). We also offer 0% EMI on orders above ₹25,000."
+      answer: "We accept all major credit/debit cards, UPI, net banking, and cash on delivery (for select locations)."
     },
     {
       id: 5,

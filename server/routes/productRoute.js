@@ -13,7 +13,8 @@ import {
   addProductReview,
   getProductStats,
   searchProducts,
-  createBulkProducts
+  createBulkProducts,
+  getLowStockProducts
 } from '../controllers/productController.js';
 import { protect, restrictTo } from '../middlewares/authUser.js';
 import { bulkAddToCart } from '../controllers/cartController.js';
@@ -28,6 +29,7 @@ router.get('/featured',  getFeaturedProducts);
 router.get('/new-arrivals', getNewArrivals);
 router.get('/on-sale',  getProductsOnSale);
 router.get('/stats',  getProductStats);
+router.get('/getLowStockProducts', protect, restrictTo('admin'), getLowStockProducts);
 router.get('/:id',  getProductById);
 
 // Protected routes (require authentication)
