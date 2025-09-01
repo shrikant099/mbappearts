@@ -1,14 +1,20 @@
-import nodemailer from "nodemailer";
+// mailer.js or emailTransporter.js
+import nodemailer from 'nodemailer';
 
-// --- Utility to send tracking email ---
-export async function sendTrackingEmail(email, name, trackingId, message, courierParam) {
-  const transporter = nodemailer.createTransport({
+export const getEmailTransporter = () => {
+  return nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.MAIL_USER,
       pass: process.env.MAIL_PASS
     }
   });
+};
+
+
+// --- Utility to send tracking email ---
+export async function sendTrackingEmail(email, name, trackingId, message, courierParam) {
+  const transporter = getEmailTransporter();
 
   let courier = courierParam || "";
   let tracking = trackingId;
@@ -71,23 +77,15 @@ export async function sendTrackingEmail(email, name, trackingId, message, courie
   await transporter.sendMail(mailOptions);
 }
 
-
-
 // --- Utility to send order confirmation email ---
 export async function sendOrderConfirmationEmail(data) {
+  const transporter = getEmailTransporter();
+
   const { email, fullName, orderId, items, shippingCharges, totalAmount, shippingInfo } = data;
 
   if (!email || !fullName || !orderId || !items || !totalAmount || !shippingInfo) {
       throw new Error("Missing required fields in email data");
   }
-
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS,
-    }
-  });
 
   const itemsRows = items.map(item => `
     <tr style="border-bottom: 1px solid #ccc;">
@@ -153,6 +151,37 @@ export async function sendOrderConfirmationEmail(data) {
     to: email,
     subject: `🪑 Order Confirmed | Mbappe Arts #${orderId}`,
     html: emailHtml
+  };
+
+  await transporter.sendMail(mailOptions);
+}
+
+export async function sendContactEmail(contactData) {
+
+  const { name, email, subject, message } = contactData;
+
+  if (!name || !email || !subject || !message) {
+    throw new Error("All fields (name, email, subject, message) are required.");
+  }
+
+  const transporter = getEmailTransporter();
+
+  const mailOptions = {
+    from: `Website Contact Form <${process.env.MAIL_USER}>`,
+    to: 'ks5066403@gmail.com', // Your personal email
+    subject: `📩 New Contact Form Submission from ${name}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; padding: 24px; background-color: #f9f9f9; border-radius: 8px; max-width: 600px;">
+        <h2 style="color: #333;">📬 New Contact Form Message</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <p><strong>Message:</strong></p>
+        <p style="white-space: pre-line;">${message}</p>
+        <hr />
+        <p style="font-size: 0.9rem; color: #777;">This message was sent from your website's contact form.</p>
+      </div>
+    `
   };
 
   await transporter.sendMail(mailOptions);
