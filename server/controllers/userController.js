@@ -109,6 +109,57 @@ export const verifyOtp = async (req, res) => {
   }
 };
 
+export const sendOtpIfExpired = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    const user = await User.findOne({ "profile.email": email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // If already active, no need for OTP
+    if (user.isActive) {
+      return res.status(400).json({ success: false, message: "Account already active" });
+    }
+
+    // If OTP still valid
+    if (user.otp && user.otpExpires > Date.now()) {
+      return res.json({ 
+        success: true, 
+        message: "OTP is still valid. Please check your email.", 
+        expiresAt: user.otpExpires 
+      });
+    }
+
+    // OTP expired → generate new OTP
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const newExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+    user.otp = newOtp;
+    user.otpExpires = newExpiry;
+    await user.save();
+
+    // Send OTP email
+    await sendOtpEmail({ email: user.profile.email, fullName: user.name, otp: newOtp });
+
+    return res.json({ 
+      success: true, 
+      message: "New OTP has been sent to your email", 
+      expiresAt: newExpiry 
+    });
+
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 
 // Login User : /api/user/login
 

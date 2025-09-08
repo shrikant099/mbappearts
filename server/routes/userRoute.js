@@ -1,5 +1,5 @@
 import express from 'express';
-import { activateSingleUser, deactivateSingleUser, forgotPassword, getAdminDashboardStats, getMe, getProfile, getUserNoPagination, getUsers, isAuth, login, logout, register, resetPassword, sendOTPToPhone, updatePicture, updateProfile, verifyOtp } from '../controllers/userController.js';
+import { activateSingleUser, deactivateSingleUser, forgotPassword, getAdminDashboardStats, getMe, getProfile, getUserNoPagination, getUsers, isAuth, login, logout, register, resetPassword, sendOtpIfExpired, sendOTPToPhone, updatePicture, updateProfile, verifyOtp } from '../controllers/userController.js';
 import { addProductToWishlist, clearWishlist, getWishlistItems, removeProductFromWishlist } from '../controllers/wishListController.js';
 import { protect, restrictTo } from '../middlewares/authUser.js';
 import { sendEmail } from '../controllers/contact.js';
@@ -11,6 +11,7 @@ const userRouter = express.Router();
 userRouter.post('/register', register)
 userRouter.post('/login', login)
 userRouter.post('/verify', verifyOtp)
+userRouter.post('/send-otp-if-expired', sendOtpIfExpired)
 userRouter.put('/update/:id', protect, updateProfile)
 userRouter.patch('/updatePicture/:id', protect, updatePicture)
 userRouter.get('/is-auth', protect, isAuth)
