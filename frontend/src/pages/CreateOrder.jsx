@@ -171,7 +171,7 @@ const CreateOrder = () => {
     if (isFromCart && cartItems.length > 0) {
       const subtotal = cartTotal;
       const shippingFee = calculateShippingCharge();
-      const tax = Math.round(subtotal * 0.18); // 18% GST
+      const tax = 0; //Math.round(subtotal * 0.18); // 18% GST
       const total = subtotal + shippingFee + tax;
       
       return { 
@@ -183,7 +183,7 @@ const CreateOrder = () => {
     } else if (product) {
       const subtotal = product.selectedVariant?.price || product.price;
       const shippingFee = calculateShippingCharge();
-      const tax = Math.round(subtotal * 0.18); // 18% GST
+      const tax = 0; //Math.round(subtotal * 0.18); // 18% GST
       const total = subtotal + shippingFee + tax;
       
       return { 
@@ -527,10 +527,10 @@ const CreateOrder = () => {
               <span>Shipping:</span>
               <span>₹{shippingFee}</span>
             </div>
-            <div className="flex justify-between">
+            {/* <div className="flex justify-between">
               <span>Tax (18%):</span>
               <span>₹{tax}</span>
-            </div>
+            </div> */}
             <div className="flex justify-between text-lg font-bold border-t border-gray-700 pt-2">
               <span>Total:</span>
               <span>₹{total}</span>

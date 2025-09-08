@@ -3,82 +3,283 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { apiConnector } from "../services/apiConnector";
 import { endpoints } from "../services/api";
+import { useDispatch, useSelector } from "react-redux";
+import { setLoading } from "../slices/authSlice";
 import toast from "react-hot-toast";
+import { Eye, EyeOff } from "lucide-react";
 
 const { resetPassword } = endpoints;
 
+// Animation variants
+const fadeInUp = {
+  hidden: { opacity: 0, y: 50 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.8,
+      ease: "easeOut",
+    },
+  },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
 export default function ResetForgotPassword() {
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [formData, setFormData] = useState({
+    otp: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const location = useLocation();
   const navigate = useNavigate();
- 
-  const [otp,setOtp] = useState("")
+  const dispatch = useDispatch();
+  const loading = useSelector((state) => state.auth.loading);
 
- 
+  // Get email from navigation state (passed from forgot password page)
+  const email = location.state?.email;
 
-  const phone = location.state?.phone;
+  // Redirect if no email provided
+  React.useEffect(() => {
+    if (!email) {
+      toast.error("Invalid access. Please start from forgot password.");
+      navigate("/forgetpassword");
+    }
+  }, [email, navigate]);
 
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleReset = async (e) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) return toast.error("Passwords do not match");
+
+    // Validation
+    if (!formData.otp) {
+      toast.error("Please enter OTP");
+      return;
+    }
+
+    if (formData.otp.length !== 6) {
+      toast.error("OTP must be 6 digits");
+      return;
+    }
+
+    if (!formData.newPassword) {
+      toast.error("Please enter new password");
+      return;
+    }
+
+    if (formData.newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    if (!formData.confirmPassword) {
+      toast.error("Please confirm your password");
+      return;
+    }
+
+    if (formData.newPassword !== formData.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
 
     try {
-      await apiConnector("POST", resetPassword, { otp,phone, newPassword,confirmPassword });
-      toast.success("Password reset successful");
-      navigate("/login");
+      dispatch(setLoading(true));
+      
+      const response = await apiConnector("POST", resetPassword, {
+        email,  // Changed from phone to email
+        otp: formData.otp,
+        newPassword: formData.newPassword,
+        confirmPassword: formData.confirmPassword,
+      });
+
+      if (response.data.success) {
+        toast.success("Password reset successful!");
+        navigate("/login");
+      } else {
+        toast.error(response.data.message || "Failed to reset password");
+      }
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to reset password");
+      console.error("Reset password error:", err);
+      toast.error(err.response?.data?.message || "Failed to reset password");
+    } finally {
+      dispatch(setLoading(false));
     }
   };
 
+  // Don't render if no email
+  if (!email) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-6 py-16 relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FFD770]/5 rounded-full blur-3xl animate-blob-slow mix-blend-screen" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gray-700/5 rounded-full blur-3xl animate-blob-slow delay-1000 mix-blend-screen" />
+        <div className="absolute top-[10%] left-[5%] w-4 h-4 bg-[#FFD770]/20 rounded-full animate-float opacity-70" />
+        <div className="absolute bottom-[20%] right-[15%] w-6 h-6 bg-gray-500/20 rounded-full animate-float delay-500 opacity-70" />
+        <div className="absolute top-[30%] right-[8%] w-5 h-5 bg-[#FFD770]/20 rounded-full animate-float delay-1000 opacity-70" />
+      </div>
+
       <motion.form
         onSubmit={handleReset}
-        className="bg-gray-900/70 backdrop-blur-md border border-yellow-300/20 rounded-2xl p-8 md:p-10 w-full max-w-md relative z-10"
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="bg-gray-900/70 backdrop-blur-md border border-[#FFD770]/30 rounded-2xl p-8 md:p-10 w-full max-w-md shadow-2xl relative z-10"
+        initial="hidden"
+        animate="visible"
+        variants={staggerContainer}
       >
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-300 to-yellow-500 bg-clip-text text-transparent mb-6 text-center">Set New Password</h2>
+        <motion.h2 
+          className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#FFD770] to-yellow-500 bg-clip-text text-transparent mb-6 text-center" 
+          variants={fadeInUp}
+        >
+          Reset Your Password
+        </motion.h2>
 
-        <input
-          type="otp"
-          value={otp}
-          onChange={(e) => setOtp(e.target.value)}
-          placeholder="OTP"
-          className="w-full p-4 mb-4 rounded-lg bg-gray-800 text-white border border-gray-700 placeholder-gray-400 focus:outline-none"
-          required
-        />
+        <motion.p 
+          className="text-gray-300 text-center mb-8 text-sm" 
+          variants={fadeInUp}
+        >
+          OTP sent to: <span className="text-[#FFD770] font-semibold">{email}</span>
+        </motion.p>
 
-       
+        {/* OTP Input */}
+        <motion.label className="block mb-6" variants={fadeInUp}>
+          <span className="text-gray-300 font-medium text-lg mb-2 block">
+            Enter OTP
+          </span>
+          <input
+            type="text"
+            name="otp"
+            value={formData.otp}
+            onChange={handleChange}
+            placeholder="Enter 6-digit OTP"
+            maxLength="6"
+            className="w-full p-4 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFD770]/60 transition-colors duration-300 text-center text-2xl tracking-widest"
+            required
+          />
+        </motion.label>
 
-        <input
-          type="password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          placeholder="New password"
-          className="w-full p-4 mb-4 rounded-lg bg-gray-800 text-white border border-gray-700 placeholder-gray-400 focus:outline-none"
-          required
-        />
-        <input
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Confirm password"
-          className="w-full p-4 mb-6 rounded-lg bg-gray-800 text-white border border-gray-700 placeholder-gray-400 focus:outline-none"
-          required
-        />
+        {/* New Password Input */}
+        <motion.label className="block mb-6 relative" variants={fadeInUp}>
+          <span className="text-gray-300 font-medium text-lg mb-2 block">
+            New Password
+          </span>
+          <input
+            type={showNewPassword ? "text" : "password"}
+            name="newPassword"
+            value={formData.newPassword}
+            onChange={handleChange}
+            placeholder="Enter new password"
+            className="w-full p-4 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFD770]/60 transition-colors duration-300 pr-12"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowNewPassword(!showNewPassword)}
+            className="absolute right-4 top-12 text-gray-400 hover:text-[#FFD770] transition-colors duration-200 focus:outline-none"
+          >
+            {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </motion.label>
 
-        <button type="submit" className="w-full py-3 bg-yellow-500 text-black font-bold rounded-full hover:bg-yellow-600 transition">
-          Reset Password
-        </button>
+        {/* Confirm Password Input */}
+        <motion.label className="block mb-8 relative" variants={fadeInUp}>
+          <span className="text-gray-300 font-medium text-lg mb-2 block">
+            Confirm Password
+          </span>
+          <input
+            type={showConfirmPassword ? "text" : "password"}
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            placeholder="Confirm new password"
+            className="w-full p-4 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFD770]/60 transition-colors duration-300 pr-12"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-4 top-12 text-gray-400 hover:text-[#FFD770] transition-colors duration-200 focus:outline-none"
+          >
+            {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </motion.label>
+
+        {/* Password Strength Indicator */}
+        {formData.newPassword && (
+          <motion.div className="mb-6" variants={fadeInUp}>
+            <div className="text-xs text-gray-400 mb-2">Password Strength:</div>
+            <div className="flex gap-1">
+              <div className={`h-1 flex-1 rounded ${formData.newPassword.length >= 6 ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+              <div className={`h-1 flex-1 rounded ${formData.newPassword.length >= 8 ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+              <div className={`h-1 flex-1 rounded ${/(?=.*[a-z])(?=.*[A-Z])/.test(formData.newPassword) ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+              <div className={`h-1 flex-1 rounded ${/(?=.*\d)/.test(formData.newPassword) ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {formData.newPassword.length < 6 ? 'Too short' : 
+               formData.newPassword.length < 8 ? 'Good' : 'Strong'}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Password Match Indicator */}
+        {formData.confirmPassword && (
+          <motion.div className="mb-6" variants={fadeInUp}>
+            <div className={`text-xs ${
+              formData.newPassword === formData.confirmPassword 
+                ? 'text-green-400' 
+                : 'text-red-400'
+            }`}>
+              {formData.newPassword === formData.confirmPassword 
+                ? '✓ Passwords match' 
+                : '✗ Passwords do not match'}
+            </div>
+          </motion.div>
+        )}
+
+        <motion.button
+          type="submit"
+          className="w-full py-4 bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-black font-bold rounded-full shadow-lg hover:shadow-xl hover:shadow-yellow-400/50 transition-all duration-300 ease-in-out active:scale-95 flex items-center justify-center gap-2"
+          variants={fadeInUp}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          disabled={loading}
+        >
+          {loading ? (
+            <div className="flex items-center justify-center w-full h-full">
+              <div className="loader1 rounded-full w-6 h-6 animate-spin"></div>
+            </div>
+          ) : (
+            <>Reset Password</>
+          )}
+        </motion.button>
+
+        <motion.div
+          className="w-full text-center mt-6 text-gray-400 text-lg cursor-pointer hover:text-[#FFD770] transition-colors duration-300"
+          onClick={() => navigate("/forgetpassword")}
+          variants={fadeInUp}
+        >
+          Didn't receive OTP?{" "}
+          <span className="underline font-semibold">Resend OTP</span>
+        </motion.div>
       </motion.form>
 
-         {/* Tailwind CSS Custom Keyframes (from AboutUs page, ensured for consistency) */}
+      {/* CSS Styles */}
       <style jsx>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
@@ -167,11 +368,11 @@ export default function ResetForgotPassword() {
         }
 
         /* Custom loader styling for consistency */
-        .loader1 {
+        .loader-login {
           width: 1.5rem;
           height: 1.5rem;
-          border: 2px solid rgba(0, 0, 0, 0.2);
-          border-top-color: black; /* Darker color for the spinning part */
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          border-top-color: white;
           border-radius: 50%;
           animation: spin 1s linear infinite;
         }
@@ -182,7 +383,6 @@ export default function ResetForgotPassword() {
           }
         }
       `}</style>
-
     </div>
   );
 }

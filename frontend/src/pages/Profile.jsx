@@ -595,7 +595,7 @@ const downloadReceiptAsPDF = (order) => {
             <div class="section">
               <div class="section-title">Customer</div>
               <div class="info-row"><span class="info-label">Name:</span> ${order.shippingAddress?.recipientName || 'N/A'}</div>
-              <div class="info-row"><span class="info-label">Phone:</span> ${order.shippingAddress?.phone || 'N/A'}</div>
+              <div class="info-row"><span class="info-label">Email:</span> ${order.shippingAddress?.user?.profile?.email || 'N/A'}</div>
             </div>
           </div>
 
@@ -704,7 +704,7 @@ const downloadReceiptAsPDF = (order) => {
         }
       );
 
-      console.log(response);
+      console.log('this is fetch order response: ',response);
 
       if (response.data.success) {
         setOrders(response.data.orders);
@@ -1436,12 +1436,16 @@ const downloadReceiptAsPDF = (order) => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-300">Shipping</span>
-              <span className="text-green-400 font-medium">FREE</span>
+              <span className="text-green-400 font-medium">  ₹{
+                  selectedOrder.shippingFee
+                }
+                  
+                  </span>
             </div>
-            <div className="flex justify-between items-center">
+            {/* <div className="flex justify-between items-center">
               <span className="text-gray-300">Tax</span>
               <span className="text-white font-medium">Included</span>
-            </div>
+            </div> */}
             <div className="border-t border-[#ecba49]/30 pt-3">
               <div className="flex justify-between items-center">
                 <span className="text-[#ecba49] font-bold text-lg">
