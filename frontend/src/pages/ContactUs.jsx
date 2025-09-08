@@ -45,9 +45,10 @@ const ContactUs = () => {
 
     try {
       const formattedData = {
+        name:formData.name,
         email: import.meta.env.VITE_EMAIL,
-        title: formData.subject || "No Title chosen",
-        body:
+        subject: formData.subject || "No Title chosen",
+        message:
           formData.name && formData.email && formData.message
             ? `name: ${formData.name}
                 email: ${formData.email}
