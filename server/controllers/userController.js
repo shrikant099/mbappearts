@@ -12,45 +12,72 @@ dotenv.config();
 
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 // Register User : /api/user/register
-export const register = async (req, res)=>{
-    try {
-        const { name, email, password } = req.body;
+export const register = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
 
-        if(!name || !email || !password){
-            return res.json({success: false, message: 'Missing Details'})
-        }
-
-        const existingUser = await User.findOne({"profile.email": email});
-
-        if(existingUser)
-            return res.json({success: false, message: 'User already exists'})
-
-        const hashedPassword = await bcrypt.hash(password, 10)
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
-
-   
-        const user = await User.create({name, "profile.email":email, password: hashedPassword, otp, otpExpires:expiry,isActive:false})
-
-            await sendOtpEmail({email: email, fullName: user.name, otp:otp})
-
-        // const token = jwt.sign({id: user._id}, process.env.JWT_SECRET, {expiresIn: '7d'});
-
-        // res.cookie('token', token, {
-        //     httpOnly: true, // Prevent JavaScript to access cookie
-        //     secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-        //     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict', // CSRF protection
-        //     maxAge: 7 * 24 * 60 * 60 * 1000, // Cookie expiration time
-        // })
-
-
-
-        return res.json({success: true, user: {email: user?.profile?.email, name: user.name,  accountType: user.accountType,_id:user._id}})
-    } catch (error) {
-        console.log(error.message);
-        res.json({ success: false, message: error.message });
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: "Missing details" });
     }
-}
+
+    let user = await User.findOne({ "profile.email": email });
+
+    // Generate OTP + expiry
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    if (user) {
+      // If user already exists
+      if (user.isActive) {
+        return res.status(400).json({ success: false, message: "User already exists and is active. Please login." });
+      }
+
+      // User exists but inactive → reset password + send fresh OTP
+      user.name = name; // in case they update name
+      user.password = hashedPassword;
+      user.otp = otp;
+      user.otpExpires = expiry;
+      user.isActive = false;
+
+      await user.save();
+      await sendOtpEmail({ email, fullName: user.name, otp });
+
+      return res.status(200).json({
+        success: true,
+        message: "OTP re-sent to your email. Please verify to activate account.",
+      });
+    }
+
+    // New user
+    user = await User.create({
+      name,
+      "profile.email": email,
+      password: hashedPassword,
+      otp,
+      otpExpires: expiry,
+      isActive: false,
+    });
+
+    await sendOtpEmail({ email, fullName: user.name, otp });
+
+    return res.status(201).json({
+      success: true,
+      message: "Account created. OTP sent to your email.",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.profile.email,
+        accountType: user.accountType,
+      },
+    });
+
+  } catch (error) {
+    console.error("Register error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 
 export const verifyOtp = async (req, res) => {
   try {
