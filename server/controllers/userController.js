@@ -126,7 +126,7 @@ export const verifyOtp = async (req, res) => {
         email: user.profile.email,
         name: user.name,
         accountType: user.accountType,
-        // token // uncomment if you want to return token
+         token // uncomment if you want to return token
       }
     });
 
