@@ -123,7 +123,7 @@ export const login = async (req, res) => {
     const user = await User.findOne({ "profile.email":email });
 
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Account is not available with this phone number' });
+      return res.status(401).json({ success: false, message: 'Account is not available with this email address' });
     }
     if(user.isActive === false){
       return res.status(403).json({ success: false, message: 'Your account is deactivated. Please contact support.' });
@@ -310,7 +310,7 @@ export const forgotPassword = async (req, res) => {
 
      await sendOtpEmail({email: email, fullName: user.name, otp:otp})
 
-    res.json({ success: true, message: 'OTP sent to your phone' });
+    res.json({ success: true, message: 'OTP sent to your email' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

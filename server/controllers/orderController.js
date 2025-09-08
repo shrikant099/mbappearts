@@ -375,7 +375,7 @@ export const getAllOrders = async (req, res) => {
 
     const total = await Order.countDocuments(filter);
     const orders = await Order.find(filter)
-      .populate('user', 'name email phone')
+      .populate('user', 'name profile phone')
       .populate('shippingAddress')
       .populate('billingAddress')
       .sort({ createdAt: -1 })
@@ -1709,7 +1709,7 @@ export const downloadReceipt = async (req, res) => {
     
     // Fetch order data
     const orderDoc = await Order.findById(req.params.id)
-      .populate("user", "name phone")
+      .populate("user", "name phone profile")
       .populate("shippingAddress");
 
     if (!orderDoc) {
@@ -1853,7 +1853,7 @@ export const downloadReceiptHTMLPDF = async (req, res) => {
     console.log(`[${new Date().toISOString()}] Starting HTML-PDF receipt generation for order: ${req.params.id}`);
     
     const orderDoc = await Order.findById(req.params.id)
-      .populate("user", "name phone")
+      .populate("user", "name phone profile")
       .populate("shippingAddress");
 
     if (!orderDoc) {
@@ -1898,7 +1898,7 @@ export const downloadReceiptFallback = async (req, res) => {
     console.log('Using enhanced fallback method for receipt generation');
     
     const orderDoc = await Order.findById(req.params.id)
-      .populate("user", "name phone")
+      .populate("user", "name phone profile")
       .populate("shippingAddress");
 
     if (!orderDoc) {
