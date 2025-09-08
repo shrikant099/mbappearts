@@ -1,11 +1,12 @@
-// const BASE_URL = "http://localhost:4000"
+const BASE_URL = "http://localhost:4000"
 
-const BASE_URL = "https://furniture-backend-2gik.onrender.com"
+// const BASE_URL = "https://furniture-backend-2gik.onrender.com"
 
 // AUTH ENDPOINTS
 export const endpoints = {
   SIGN_UP: BASE_URL + "/api/user/register",
   LOGIN_API: BASE_URL + "/api/user/login",
+  VERIFY_OTP: BASE_URL + "/api/user/verify",
   FORGET_PASSWORD : BASE_URL + "/api/auth/forgot-password",
   RESET_PASSWORD : BASE_URL + "/api/auth/reset-password/",
   updateProfile : BASE_URL + "/api/user/update/",

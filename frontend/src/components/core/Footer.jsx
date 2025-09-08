@@ -43,34 +43,7 @@ export default function Footer() {
   };
 
   const socialLinks = [
-    { 
-      icon: FaFacebookSquare, 
-      name: 'Facebook', 
-      color: 'hover:text-blue-500',
-      link: '#',
-      hoverBg: 'hover:bg-blue-500/20'
-    },
-    { 
-      icon: FaTwitter, 
-      name: 'Twitter', 
-      color: 'hover:text-sky-400',
-      link: '#',
-      hoverBg: 'hover:bg-sky-400/20'
-    },
-    { 
-      icon: FaSquareInstagram, 
-      name: 'Instagram', 
-      color: 'hover:text-pink-500',
-      link: '#',
-      hoverBg: 'hover:bg-gradient-to-r hover:from-pink-500/20 hover:to-purple-500/20'
-    },
-    { 
-      icon: FaLinkedin, 
-      name: 'LinkedIn', 
-      color: 'hover:text-blue-600',
-      link: '#',
-      hoverBg: 'hover:bg-blue-600/20'
-    }
+   
   ];
 
   const companyLinks = [
