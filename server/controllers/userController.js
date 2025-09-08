@@ -26,17 +26,24 @@ export const register = async (req, res)=>{
             return res.json({success: false, message: 'User already exists'})
 
         const hashedPassword = await bcrypt.hash(password, 10)
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
-        const user = await User.create({name, "profile.email":email, password: hashedPassword})
+   
+        const user = await User.create({name, "profile.email":email, password: hashedPassword, otp, otpExpires:expiry,isActive:false})
 
-        const token = jwt.sign({id: user._id}, process.env.JWT_SECRET, {expiresIn: '7d'});
+            await sendOtpEmail({email: email, fullName: user.name, otp:otp})
 
-        res.cookie('token', token, {
-            httpOnly: true, // Prevent JavaScript to access cookie
-            secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict', // CSRF protection
-            maxAge: 7 * 24 * 60 * 60 * 1000, // Cookie expiration time
-        })
+        // const token = jwt.sign({id: user._id}, process.env.JWT_SECRET, {expiresIn: '7d'});
+
+        // res.cookie('token', token, {
+        //     httpOnly: true, // Prevent JavaScript to access cookie
+        //     secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        //     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict', // CSRF protection
+        //     maxAge: 7 * 24 * 60 * 60 * 1000, // Cookie expiration time
+        // })
+
+
 
         return res.json({success: true, user: {email: user?.profile?.email, name: user.name, token: token, accountType: user.accountType,_id:user._id}})
     } catch (error) {
@@ -44,6 +51,64 @@ export const register = async (req, res)=>{
         res.json({ success: false, message: error.message });
     }
 }
+
+export const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: "Email and OTP are required" });
+    }
+
+    // Find user by profile.email
+    const user = await User.findOne({ "profile.email": email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Check OTP and expiry
+    if (user.otp !== otp) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    if (user.otpExpires < Date.now()) {
+      return res.status(400).json({ success: false, message: "OTP has expired" });
+    }
+
+    // OTP is valid → activate account
+    user.isActive = true;  // or `active` if you use that field
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    // Optionally, generate JWT token
+     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      res.cookie('token', token, {
+            httpOnly: true, // Prevent JavaScript to access cookie
+            secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict', // CSRF protection
+            maxAge: 7 * 24 * 60 * 60 * 1000, // Cookie expiration time
+        })
+
+
+    return res.json({
+      success: true,
+      message: "OTP verified successfully. Account activated.",
+      user: {
+        _id: user._id,
+        email: user.profile.email,
+        name: user.name,
+        accountType: user.accountType,
+        // token // uncomment if you want to return token
+      }
+    });
+
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 
 // Login User : /api/user/login
 
