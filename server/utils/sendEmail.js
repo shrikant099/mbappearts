@@ -186,3 +186,44 @@ export async function sendContactEmail(contactData) {
 
   await transporter.sendMail(mailOptions);
 }
+
+
+// --- Utility to send OTP email ---
+export async function sendOtpEmail(data) {
+  const transporter = getEmailTransporter();
+
+  const { email, fullName, otp } = data;
+
+  if (!email || !fullName || !otp) {
+    throw new Error("Missing required fields in OTP email data");
+  }
+
+  const emailHtml = `
+  <div style="font-family: 'Segoe UI', sans-serif; background-color: #f4f8ff; color: #333; padding: 30px; border-radius: 8px; max-width: 600px; margin: auto;">
+    <h2 style="color: #1d4ed8; text-align: center;">🔐 OTP Verification – Mbappe Arts</h2>
+    <p>Hello <b>${fullName}</b>,</p>
+    <p>We received a request to verify your email. Use the following OTP to proceed:</p>
+
+    <div style="text-align: center; margin: 20px 0;">
+      <span style="font-size: 28px; font-weight: bold; color: #1d4ed8; letter-spacing: 4px; padding: 12px 24px; border: 2px dashed #1d4ed8; border-radius: 8px; display: inline-block;">
+        ${otp}
+      </span>
+    </div>
+
+    <p>This OTP is valid for <b>10 minutes</b>. Please do not share it with anyone.</p>
+    <p>If you did not request this verification, please ignore this email.</p>
+
+    <p style="margin-top: 30px;">Warm regards,<br><b>Team Mbappe Arts</b></p>
+    <p><a href="https://mbappe-arts.vercel.app/" style="color: #1d4ed8;">Visit Our Website</a></p>
+  </div>
+  `;
+
+  const mailOptions = {
+    from: `Mbappe Arts <${process.env.MAIL_USER}>`,
+    to: email,
+    subject: `🔐 Your OTP Code – Mbappe Arts`,
+    html: emailHtml
+  };
+
+  await transporter.sendMail(mailOptions);
+}

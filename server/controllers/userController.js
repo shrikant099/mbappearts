@@ -7,26 +7,27 @@ import Order from "../models/Order.js";
 import {uploadImageToCloudinary} from '../utils/imageUploader.js'
 import twilio from 'twilio';
 import dotenv from "dotenv";
+import { sendOtpEmail } from "../utils/sendEmail.js";
 dotenv.config();
 
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 // Register User : /api/user/register
 export const register = async (req, res)=>{
     try {
-        const { name, phone, password } = req.body;
+        const { name, email, password } = req.body;
 
-        if(!name || !phone || !password){
+        if(!name || !email || !password){
             return res.json({success: false, message: 'Missing Details'})
         }
 
-        const existingUser = await User.findOne({phone})
+        const existingUser = await User.findOne({email})
 
         if(existingUser)
             return res.json({success: false, message: 'User already exists'})
 
         const hashedPassword = await bcrypt.hash(password, 10)
 
-        const user = await User.create({name, phone, password: hashedPassword})
+        const user = await User.create({name, "profile.email":email, password: hashedPassword})
 
         const token = jwt.sign({id: user._id}, process.env.JWT_SECRET, {expiresIn: '7d'});
 
@@ -37,7 +38,7 @@ export const register = async (req, res)=>{
             maxAge: 7 * 24 * 60 * 60 * 1000, // Cookie expiration time
         })
 
-        return res.json({success: true, user: {phone: user.phone, name: user.name, token: token, accountType: user.accountType,_id:user._id}})
+        return res.json({success: true, user: {email: user?.profile?.email, name: user.name, token: token, accountType: user.accountType,_id:user._id}})
     } catch (error) {
         console.log(error.message);
         res.json({ success: false, message: error.message });
@@ -48,13 +49,13 @@ export const register = async (req, res)=>{
 
 export const login = async (req, res) => {
   try {
-    const { phone, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!phone || !password) {
-      return res.status(400).json({ success: false, message: 'Phone and password are required' });
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ phone });
+    const user = await User.findOne({ "profile.email":email });
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'Account is not available with this phone number' });
@@ -80,7 +81,7 @@ export const login = async (req, res) => {
     return res.status(200).json({
       success: true,
       user: {
-        phone: user.phone,
+        email: user?.profile?.email,
         name: user.name,
         accountType: user.accountType,
         token: token,
@@ -230,9 +231,9 @@ export const sendOTPToPhone = async (phone, otp) => {
 
 export const forgotPassword = async (req, res) => {
   try {
-    const { phone } = req.body;
+    const { email } = req.body;
 
-    const user = await User.findOne({ phone:phone });
+    const user = await User.findOne({ 'profile.email':email });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -242,7 +243,7 @@ export const forgotPassword = async (req, res) => {
     user.otpExpires = expiry;
     await user.save();
 
-     await sendOTPToPhone(phone, otp);
+     await sendOtpEmail({email: email, fullName: user.name, otp:otp})
 
     res.json({ success: true, message: 'OTP sent to your phone' });
   } catch (err) {
@@ -252,13 +253,13 @@ export const forgotPassword = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
   try {
-    const { phone, otp, newPassword, confirmPassword } = req.body;
+    const { email, otp, newPassword, confirmPassword } = req.body;
 
 
 
     // Find the user
     
-    const user = await User.findOne({ phone });
+    const user = await User.findOne({ 'profile.email':email });
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
