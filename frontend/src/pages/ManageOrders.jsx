@@ -103,7 +103,7 @@ const ManageOrders = () => {
     }
   };
 
-  // Search and filter function
+  // UPDATED: Search and filter function - Changed phone to email
   const handleSearch = () => {
     if (!searchTerm.trim()) {
       setFilteredOrders(orders);
@@ -119,7 +119,7 @@ const ManageOrders = () => {
         case "customer":
           return (
             order.user?.name?.toLowerCase().includes(searchLower) ||
-            order.user?.phone?.toString().includes(searchLower)
+            order.user?.profile?.email?.toLowerCase().includes(searchLower)
           );
         case "date":
           const orderDate = new Date(order.createdAt)
@@ -131,7 +131,7 @@ const ManageOrders = () => {
           return (
             order.orderId.toLowerCase().includes(searchLower) ||
             order.user?.name?.toLowerCase().includes(searchLower) ||
-            order.user?.phone?.toString().includes(searchLower) ||
+            order.user?.profile?.email?.toLowerCase().includes(searchLower) ||
             new Date(order.createdAt)
               .toLocaleDateString()
               .toLowerCase()
@@ -264,7 +264,7 @@ const ManageOrders = () => {
     <div className="manage-orders text-[#FFD700] w-[100vw] lg:w-[calc(100vw-256px)] overflow-y-auto h-screen p-3 sm:p-6 hidescroll">
       <h2 className="text-xl sm:text-2xl font-bold mb-4">Manage Orders</h2>
 
-      {/* Search Bar */}
+      {/* UPDATED: Search Bar - Changed placeholder text from phone to email */}
       <div className="mb-6 bg-white p-3 sm:p-4 rounded-lg shadow-lg">
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
           <div className="flex-1 flex flex-col sm:flex-row gap-2">
@@ -286,7 +286,7 @@ const ManageOrders = () => {
                   : searchFilter === "orderId"
                   ? "Order ID"
                   : searchFilter === "customer"
-                  ? "Customer Name or Phone"
+                  ? "Customer Name or Email"
                   : "Order Date (MM/DD/YYYY)"
               }`}
               value={searchTerm}
@@ -336,6 +336,7 @@ const ManageOrders = () => {
                   <div>
                     <h3 className="font-bold text-lg">{order.orderId}</h3>
                     <p className="text-gray-600 text-sm">{order.user?.name}</p>
+                    <p className="text-gray-500 text-xs">{order.user?.profile?.email || 'N/A'}</p>
                   </div>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
@@ -405,7 +406,7 @@ const ManageOrders = () => {
             ))}
           </div>
 
-          {/* Desktop Table View */}
+          {/* UPDATED: Desktop Table View - Changed phone display to email */}
           <div className="hidden lg:block overflow-x-auto rounded-lg shadow-lg">
             <table className="w-full min-w-[900px] bg-white text-black">
               <thead className="bg-[#FFD700]">
@@ -437,7 +438,7 @@ const ManageOrders = () => {
                       <div>
                         <div className="font-medium">{order.user?.name}</div>
                         <div className="text-sm text-gray-500">
-                          {order.user?.phone}
+                          {order.user?.profile?.email || 'N/A'}
                         </div>
                       </div>
                     </td>
@@ -590,7 +591,7 @@ const ManageOrders = () => {
                 </div>
               </div>
 
-              {/* Customer Information */}
+              {/* UPDATED: Customer Information - Changed phone to email */}
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 sm:p-6 rounded-lg border border-green-200">
                 <h4 className="text-lg font-semibold mb-4 text-green-800">
                   Customer Information
@@ -606,9 +607,9 @@ const ManageOrders = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">
-                      Phone
+                      Email
                     </label>
-                    <div className="text-base">{selectedOrder.user?.phone}</div>
+                    <div className="text-base">{selectedOrder.user?.profile?.email || 'N/A'}</div>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">
@@ -715,7 +716,7 @@ const ManageOrders = () => {
                 </div>
               </div>
 
-              {/* Shipping Address */}
+              {/* UPDATED: Shipping Address - Changed phone to email (keeping phone as it's shipping address phone) */}
               <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 sm:p-6 rounded-lg border border-indigo-200">
                 <h4 className="text-lg font-semibold mb-4 text-indigo-800">
                   Shipping Address
@@ -891,7 +892,7 @@ const ManageOrders = () => {
         </div>
       )}
 
-      {/* Order Detail Modal */}
+      {/* Status Update Modal */}
       {showStatusModal && selectedOrder && (
         <div className="fixed inset-0 backdrop-blur-3xl bg-opacity-50 flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-4xl max-h-[70vh] overflow-y-auto text-black mt-16 hidescroll">

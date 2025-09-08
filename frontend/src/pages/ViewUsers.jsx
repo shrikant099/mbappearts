@@ -10,7 +10,7 @@ const ViewUsers = () => {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState({}); // Track loading for individual actions
+  const [actionLoading, setActionLoading] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -18,7 +18,6 @@ const ViewUsers = () => {
 
   const token = useSelector(state => state.auth.token);
 
-  // Add these action functions
   const handleActivateUser = async (userId) => {
     try {
       setActionLoading(prev => ({ ...prev, [userId]: true }));
@@ -35,7 +34,6 @@ const ViewUsers = () => {
       if (res.data.success) {
         toast.success("User activated successfully");
         
-        // Update user in both allUsers and filteredUsers
         setAllUsers(prevUsers => 
           prevUsers.map(user => 
             user._id === userId ? { ...user, isActive: true } : user
@@ -73,7 +71,6 @@ const ViewUsers = () => {
       if (res.data.success) {
         toast.success("User deactivated successfully");
         
-        // Update user in both allUsers and filteredUsers
         setAllUsers(prevUsers => 
           prevUsers.map(user => 
             user._id === userId ? { ...user, isActive: false } : user
@@ -95,7 +92,6 @@ const ViewUsers = () => {
     }
   };
 
-  // Your existing functions remain the same...
   const fetchUsers = async (page = 1) => {
     try {
       setLoading(true);
@@ -137,23 +133,23 @@ const ViewUsers = () => {
     }
   };
 
-  // Keep all your existing useEffects and handlers...
   useEffect(() => {
     if (token) {
       fetchUsers(1);
     }
   }, [token]);
 
+  // UPDATED: Changed search logic from phone to email
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredUsers(allUsers);
     } else {
       const filtered = allUsers.filter(user => {
         const name = user.name ? user.name.toLowerCase() : '';
-        const phone = user.phone ? String(user.phone).toLowerCase() : '';
+        const email = user.profile?.email ? String(user.profile.email).toLowerCase() : '';
         const searchTerm = searchQuery.toLowerCase();
         
-        return name.includes(searchTerm) || phone.includes(searchTerm);
+        return name.includes(searchTerm) || email.includes(searchTerm);
       });
       setFilteredUsers(filtered);
     }
@@ -184,7 +180,7 @@ const ViewUsers = () => {
           </h1>
         </div>
 
-        {/* Search Bar - Keep existing */}
+        {/* UPDATED: Search Bar placeholder changed from phone to email */}
         <div className="mb-4 sm:mb-6 max-w-md mx-auto">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -192,7 +188,7 @@ const ViewUsers = () => {
             </div>
             <input
               type="text"
-              placeholder="Search by name or phone number on this page..."
+              placeholder="Search by name or email on this page..."
               value={searchQuery}
               onChange={handleSearchChange}
               className="block w-full pl-10 pr-10 py-2 sm:py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFD770] focus:border-transparent transition duration-200 shadow-sm text-sm sm:text-base"
@@ -228,14 +224,14 @@ const ViewUsers = () => {
           )}
         </div>
 
-        {/* Desktop Table View - UPDATED with Action column */}
+        {/* UPDATED: Desktop Table View - Changed Phone column to Email */}
         <div className="hidden lg:block overflow-x-auto shadow-lg rounded-lg mb-6">
           <table className="min-w-[800px] w-full bg-white rounded">
             <thead className="bg-[#FFD770] text-[#222]">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold">Sr. No.</th>
                 <th className="px-4 py-3 text-left font-semibold">Name</th>
-                <th className="px-4 py-3 text-left font-semibold">Phone</th>
+                <th className="px-4 py-3 text-left font-semibold">Email</th>
                 <th className="px-4 py-3 text-left font-semibold">Status</th>
                 <th className="px-4 py-3 text-left font-semibold">Orders</th>
                 <th className="px-4 py-3 text-left font-semibold">Actions</th>
@@ -274,17 +270,17 @@ const ViewUsers = () => {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        {searchQuery && user.phone && String(user.phone).toLowerCase().includes(searchQuery.toLowerCase()) ? (
+                        {searchQuery && user.profile?.email && String(user.profile.email).toLowerCase().includes(searchQuery.toLowerCase()) ? (
                           <span
                             dangerouslySetInnerHTML={{
-                              __html: String(user.phone).replace(
+                              __html: String(user.profile.email).replace(
                                 new RegExp(`(${searchQuery})`, 'gi'),
                                 '<mark class="bg-yellow-200 px-1 rounded">$1</mark>'
                               )
                             }}
                           />
                         ) : (
-                          user.phone
+                          user.profile?.email || 'N/A'
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -365,7 +361,7 @@ const ViewUsers = () => {
           </table>
         </div>
 
-        {/* Mobile/Tablet Card View - UPDATED with Action buttons */}
+        {/* UPDATED: Mobile/Tablet Card View - Changed phone display to email */}
         <div className="lg:hidden mb-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -410,17 +406,17 @@ const ViewUsers = () => {
                           )}
                         </h3>
                         <p className="text-gray-600 text-lg font-medium">
-                          {searchQuery && user.phone && String(user.phone).toLowerCase().includes(searchQuery.toLowerCase()) ? (
+                          {searchQuery && user.profile?.email && String(user.profile.email).toLowerCase().includes(searchQuery.toLowerCase()) ? (
                             <span
                               dangerouslySetInnerHTML={{
-                                __html: String(user.phone).replace(
+                                __html: String(user.profile.email).replace(
                                   new RegExp(`(${searchQuery})`, 'gi'),
                                   '<mark class="bg-yellow-200 px-1 rounded">$1</mark>'
                                 )
                               }}
                             />
                           ) : (
-                            user.phone
+                            user.profile?.email || 'N/A'
                           )}
                         </p>
                       </div>
@@ -483,7 +479,7 @@ const ViewUsers = () => {
           )}
         </div>
 
-        {/* Keep existing pagination and modal code... */}
+        {/* Pagination remains the same */}
         {totalPages > 1 && !loading && (
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-6">
             <button
@@ -546,7 +542,7 @@ const ViewUsers = () => {
         </div>
       </div>
 
-      {/* User Details Modal - keep existing */}
+      {/* UPDATED: User Details Modal - Changed phone display to email */}
       {selectedUser && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">
           <div className="bg-[#111] text-[#FFD770] max-w-xl w-full rounded-lg p-4 sm:p-6 overflow-y-auto max-h-[90vh] shadow-[0_0_20px_rgba(255,215,112,0.3)] animate-scale-in border border-[#FFD770]/30">
@@ -562,7 +558,7 @@ const ViewUsers = () => {
 
             <div className="space-y-3 text-sm sm:text-base tracking-wide leading-relaxed">
               <p><span className="font-semibold">Name:</span> {selectedUser?.name || 'N/A'}</p>
-              <p><span className="font-semibold">Phone:</span> {selectedUser?.phone || 'N/A'}</p>
+              <p><span className="font-semibold">Email:</span> {selectedUser?.profile?.email || 'N/A'}</p>
               <p><span className="font-semibold">Status:</span> 
                 <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${
                   selectedUser?.isActive 
