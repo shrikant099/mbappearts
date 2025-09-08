@@ -43,7 +43,7 @@ const wishlistSchema = new mongoose.Schema({
 
 const userSchema = new mongoose.Schema({
     name: {type: String, required: true },
-    phone: {type: Number,  unique: true,minlength: 10, maxlength: 10 },
+    phone: {type: Number,  minlength: 10, maxlength: 10 },
     password: {type: String, required: true },
     image:{type:String},
     accountType: {type: String, default: 'user'},
