@@ -144,6 +144,7 @@ const EditableField = ({
   );
 };
 
+
 // Component for Date of Birth Dropdowns
 const EditableDOBField = ({
   label,
@@ -1605,13 +1606,18 @@ const downloadReceiptAsPDF = (order) => {
               icon={Phone}
               handleSave={handleSave}
             />
-            <EditableField
-              label="Email"
-              field="profile.email"
-              value={profileData?.profile?.email}
-              icon={Mail}
-              handleSave={handleSave}
-            />
+           <div className={`group p-4 rounded-lg bg-[#1a1a1a] border border-transparent hover:border-[#ecba49]/30 transition-all duration-300 hover:shadow-lg`}>
+  <div className="flex items-center gap-3 flex-1">
+    <Mail size={20} className="text-[#ecba49]" />
+    <div className="flex-1">
+      <label className="text-sm text-gray-400 block mb-1">Email</label>
+      <div className="text-[#ecba49] font-medium group-hover:text-yellow-300 transition-colors duration-300">
+        {profileData?.profile?.email || "Not specified"}
+      </div>
+    </div>
+  </div>
+</div>
+
             <EditableField
               label="Age"
               field="profile.age"
