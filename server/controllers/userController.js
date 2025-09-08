@@ -354,20 +354,20 @@ export const getProfile = async(req, res) =>{
 
 
 
-export const sendOTPToPhone = async (phone, otp) => {
-  try {
-    const message = await client.messages.create({
-      body: `Your OTP is ${otp}. It will expire in 10 minutes.`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: `+91${phone}`
-    });
+// export const sendOTPToPhone = async (phone, otp) => {
+//   try {
+//     const message = await client.messages.create({
+//       body: `Your OTP is ${otp}. It will expire in 10 minutes.`,
+//       from: process.env.TWILIO_PHONE_NUMBER,
+//       to: `+91${phone}`
+//     });
     
-    return true;
-  } catch (error) {
-    console.error("Twilio error:", error);
-    throw new Error('Failed to send OTP');
-  }
-};
+//     return true;
+//   } catch (error) {
+//     console.error("Twilio error:", error);
+//     throw new Error('Failed to send OTP');
+//   }
+// };
 
 
 
