@@ -6,7 +6,7 @@ import { FaShoppingCart } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { setRole, setUserData, setToken } from "../../slices/authSlice";
 import toast from "react-hot-toast";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import livingroomFurniture from "../../assets/images/livingroom.webp";
 import bedroomFurniture from "../../assets/images/bedroom.webp";
 import diningroomFurniture from "../../assets/images/diningroom.webp";
@@ -27,6 +27,8 @@ const Navbar = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const location = useLocation();
 
   const [showSearch, setShowSearch] = useState(false);
 
@@ -148,16 +150,22 @@ const Navbar = () => {
     }
   };
 
+  
+
   return (
     <div className="fixed top-0 w-full z-[150]">
       <div className="bg-black relative h-[10vh] text-[#FFD700] flex items-center justify-between px-3 lg:px-10">
         {/* Hamburger for small screens */}
-        <button
+        {
+          location.pathname === '/products' && (
+            <button
           className="lg:hidden fixed top-4 left-4 z-[200] cursor-pointer text-[#FFD700] bg-black p-2 rounded focus:outline-none"
           onClick={() => dispatch(setIsOpen())}
         >
           ☰
         </button>
+          )
+        }
         
         {/* Simple Rounded Logo */}
         <img
