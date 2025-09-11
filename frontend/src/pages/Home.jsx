@@ -54,6 +54,9 @@ const Home = () => {
   const fetchTopReview = async () => {
     try {
       const topreview = await apiConnector("GET", topReview);
+
+        console.log(topreview)
+
       const dataReview = topreview?.data?.reviews;
       setReviews(dataReview?.slice(0, Math.min(3, dataReview.length)) || []);
     } catch (error) {
