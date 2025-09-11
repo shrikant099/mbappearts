@@ -22,7 +22,8 @@ export default function Sidebar() {
 
   const logoutHandler = async () => {
       try {
-       
+
+  
         // Clear local storage
         localStorage.removeItem("token");
         localStorage.removeItem("role");
@@ -33,7 +34,7 @@ export default function Sidebar() {
         dispatch(setToken(null));
         dispatch(setUserData(null));
         dispatch(setRole(null));
-        dispatch(resetCart());
+       
   
         toast.success("Logged out Successfully!");
         navigate("/");
@@ -42,7 +43,6 @@ export default function Sidebar() {
         toast.error("Unable to logout. Please try again.");
       }
     };
-
   return (
     <>
       {/* Hamburger for small screens */}
