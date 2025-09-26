@@ -23,7 +23,7 @@ await connectDB()
 await connectCloudinary()
 
 // Allow multiple origins
-const allowedOrigins = ['http://localhost:5173','https://mbappe-arts.vercel.app','https://mbappearts.com']
+const allowedOrigins = ['http://localhost:5173','https://mbappearts.vercel.app','https://mbappe-arts.vercel.app','https://mbappearts.com']
 
 app.use(
 	fileUpload({
